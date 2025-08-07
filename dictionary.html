@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png">
     <style>
         /* Custom base styles */
         body {
@@ -137,20 +138,6 @@
                 <!-- Word Title -->
                 <div id="word-display" class="hidden">
                     <h1 id="the-word" class="text-5xl font-bold capitalize text-gray-900 break-words"></h1>
-                    <!-- Gemini Features -->
-                    <div id="gemini-features" class="hidden mt-6 space-y-4 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                        <div class="flex items-center gap-4">
-                            <button id="gemini-explain-btn" class="bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:bg-purple-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stars" viewBox="0 0 16 16"><path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.9l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.9A1.73 1.73 0 0 0 2.31 4.807l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/></svg>
-                                Explain Simply with Gemini AI
-                            </button>
-                            <svg id="gemini-spinner" class="animate-spin h-6 w-6 text-purple-600 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </div>
-                        <div id="gemini-output" class="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg text-purple-900 mt-4 hidden"></div>
-                    </div>
                 </div>
 
                 <!-- Status/Error Messages -->
@@ -163,6 +150,25 @@
                         <p class="text-yellow-700 bg-yellow-100 p-3 rounded-lg">Warning: Images may contain sensitive content.</p>
                         <button id="reveal-grossness-button" class="mt-2 bg-yellow-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-yellow-600">Show Images</button>
                     </div>
+                </div>
+
+                <!-- Action Buttons & Gemini Output -->
+                <div id="controls-and-output" class="hidden space-y-4">
+                     <div id="action-buttons" class="bg-gray-50 border border-gray-200 p-4 rounded-lg flex flex-wrap items-center gap-4">
+                        <button id="gemini-explain-btn" class="bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:bg-purple-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stars" viewBox="0 0 16 16"><path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.9l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.9A1.73 1.73 0 0 0 2.31 4.807l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/></svg>
+                            Explain Simply
+                        </button>
+                        <button id="goto-translations-btn" class="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 0 1 11 0c0 1.456-.394 2.823-1.088 3.996a.5.5 0 0 1-.866-.5A4.5 4.5 0 0 0 13.5 8a4.5 4.5 0 0 0-9 0 4.5 4.5 0 0 0 1.954 3.496.5.5 0 1 1-.866.5A5.5 5.5 0 0 1 2.5 8m6.336 4.793a.5.5 0 0 1 .728 0l2 2a.5.5 0 0 1-.708.707L9.5 14.207v1.293a.5.5 0 0 1-1 0v-1.293l-1.354 1.353a.5.5 0 0 1-.708-.707zM3.5 8a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0zm11 0a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0zM12 8a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0zm-7 0a.5.5 0 0 0-1 0v1.5a.5.5 0 0 0 1 0z"/></svg>
+                            Go to Translations
+                        </button>
+                        <svg id="gemini-spinner" class="animate-spin h-6 w-6 text-purple-600 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <div id="gemini-output" class="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-lg text-purple-900 hidden"></div>
                 </div>
 
                 <!-- Definition -->
@@ -188,8 +194,10 @@
     const grossnessWarning = document.getElementById('grossness-warning');
     const revealGrossnessButton = document.getElementById('reveal-grossness-button');
     const definitionContent = document.getElementById('the-definition-content');
-    const geminiFeatures = document.getElementById('gemini-features');
+    const controlsAndOutput = document.getElementById('controls-and-output');
+    const actionButtons = document.getElementById('action-buttons');
     const geminiExplainBtn = document.getElementById('gemini-explain-btn');
+    const gotoTranslationsBtn = document.getElementById('goto-translations-btn');
     const geminiSpinner = document.getElementById('gemini-spinner');
     const geminiOutput = document.getElementById('gemini-output');
 
@@ -231,11 +239,18 @@
                 lookupForm.requestSubmit();
             }
         } catch (error) {
-            console.error("Could not parse link:", href, error);
+            console.error("Could not parse link:", error);
         }
     });
 
     geminiExplainBtn.addEventListener('click', callGeminiToExplain);
+    
+    gotoTranslationsBtn.addEventListener('click', () => {
+        const translationsSection = definitionContent.querySelector('[id^="Translations"]');
+        if (translationsSection) {
+            translationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
 
     // --- Main Functions ---
 
@@ -297,8 +312,7 @@
             contentSource = contentFragment;
         }
         
-        const cleanedHtml = cleanHtml(contentSource, lang);
-        return cleanedHtml;
+        return cleanHtml(contentSource, lang);
     }
     
     async function fetchImageData(word, lang) {
@@ -339,7 +353,7 @@
         try {
             let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
             const payload = { contents: chatHistory };
-            const apiKey = "AIzaSyDr2w2ji-CIqj99wEpnoZZBBfaHtiRkghI";
+            const apiKey = "";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             
             const response = await fetch(apiUrl, {
@@ -375,10 +389,19 @@
         wordDisplay.classList.add('fade-in');
         theWordElement.textContent = word;
 
-        if (definitionHtml) {
+        if (definitionHtml && definitionHtml.childNodes.length > 0) {
             definitionContent.replaceChildren(definitionHtml);
             definitionContent.classList.remove('hidden');
-            geminiFeatures.classList.remove('hidden');
+            controlsAndOutput.classList.remove('hidden');
+
+            // Show/hide the translations button based on content
+            const translationsSection = definitionContent.querySelector('[id^="Translations"]');
+            if (translationsSection) {
+                gotoTranslationsBtn.classList.remove('hidden');
+            } else {
+                gotoTranslationsBtn.classList.add('hidden');
+            }
+
         } else {
             const lang = languageSelector.value;
             renderError(`No definition found for "${word}" in the ${languageData[lang].name} section.`);
@@ -463,10 +486,10 @@
             }
         }
 
-        fragment.innerHTML = '';
-        fragment.append(...newNodes);
+        const newFragment = document.createDocumentFragment();
+        newFragment.append(...newNodes);
 
-        fragment.querySelectorAll('a').forEach(a => {
+        newFragment.querySelectorAll('a').forEach(a => {
             let href = a.getAttribute('href');
             if (!href) return;
             const wiktionaryUrl = `https://${lang}.wiktionary.org`;
@@ -477,7 +500,7 @@
             else { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
         });
         
-        return fragment;
+        return newFragment;
     }
 
     function setLoadingState(isLoading) {
@@ -492,8 +515,9 @@
         imagesContainer.classList.add('hidden');
         definitionContent.classList.add('hidden');
         definitionContent.innerHTML = '';
-        geminiFeatures.classList.add('hidden');
+        controlsAndOutput.classList.add('hidden');
         geminiOutput.classList.add('hidden');
+        gotoTranslationsBtn.classList.add('hidden');
         grossnessWarning.style.display = 'none';
         theImagesElement.classList.remove('blurred');
     }
