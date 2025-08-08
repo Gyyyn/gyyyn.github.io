@@ -1,12 +1,251 @@
 <!DOCTYPE html>
-<html lang="">
-  <head>
-    <meta charset="utf-8">
-    <title></title>
-  </head>
-  <body>
-    <header></header>
-    <main>Don't mind me.'</main>
-    <footer></footer>
-  </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Bit Web Tools</title>
+    <style>
+        /* --- Basic Setup & 8-Bit Aesthetics --- */
+        @font-face {
+            font-family: 'PressStart2P';
+            src: url('https://fonts.gstatic.com/s/pressstart2p/v14/e3t4euO8T-267oIAQAu6jDQyK3nVivM.woff2') format('woff2');
+        }
+
+        body {
+            background-color: #362419; /* Deep brown */
+            color: #00ff00; /* Green text */
+            font-family: 'PressStart2P', cursive;
+            cursor: url('https://www.rw-designer.com/cursor-download.php?id=120271'), auto;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* --- Cursor Trails --- */
+        .trail {
+            position: fixed;
+            height: 6px;
+            width: 6px;
+            background: #00ff00;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 4px #00ff00, 0 0 8px #00ff00;
+        }
+
+        /* --- Animated Intro --- */
+        .intro-text {
+            font-size: 2rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            border-right: 0.15em solid #00ff00;
+            animation: typing 3.5s steps(30, end), blink-caret .75s step-end infinite;
+            margin: 2rem auto 1rem;
+            max-width: max-content;
+        }
+        
+        .intro-paragraph {
+            font-size: 0.875rem;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 4rem auto;
+            text-align: center;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #00ff00; }
+        }
+
+        /* --- Masonry Layout --- */
+        .masonry {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            text-align: left;
+        }
+
+        .masonry-item {
+            background: #2a1c13;
+            border: 3px solid #00ff00;
+            padding: 1.25rem;
+            box-shadow: 6px 6px 0px #00ff00;
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+        }
+
+        .masonry-item h3 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            text-shadow: 2px 2px 0px #1a110c;
+        }
+
+        .masonry-item p {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1.25rem;
+        }
+
+        .masonry-item a {
+            display: inline-block;
+            background-color: #00ff00;
+            color: #362419;
+            padding: 0.6rem 1.2rem;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            box-shadow: 3px 3px 0px #1a110c;
+        }
+
+        .masonry-item a:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #1a110c;
+        }
+        
+        /* --- Footer Styles --- */
+        footer {
+            border-top: 4px solid #00ff00;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .social-links a {
+            color: #00ff00;
+            text-decoration: none;
+            margin: 0 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .social-links a:hover {
+            background-color: #00ff00;
+            color: #362419;
+            text-shadow: none;
+        }
+
+        .contact-info p, .copyright p {
+            margin: 0;
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="intro-text">> My Web Tools_</h1>
+        
+        <p class="intro-paragraph">
+            Welcome to my collection of digital creations. Each tool below is a small project that I made to help with a specific problem I had but nobody else solved. Feel free to explore and use them.
+        </p>
+
+        <div id="masonry-container" class="masonry">
+            <!-- Project cards will be injected here by JavaScript -->
+        </div>
+        
+        <footer>
+            <div class="footer-content">
+                <div class="social-links">
+                    <a href="https://github.com/Gyyyn" target="_blank">[GitHub]</a>
+                    <a href="https://www.linkedin.com/in/gabriel-franzoni-72997035b/" target="_blank">[LinkedIn]</a>
+                </div>
+                <div class="contact-info">
+                    <p>CONTACT: ghfrazoni@gmail.com</p>
+                </div>
+                <div class="copyright">
+                    <p>&copy; 2025 Gabriel Franzoni</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- Cursor Trails Logic ---
+        const trails = [];
+        const numTrails = 15;
+
+        for (let i = 0; i < numTrails; i++) {
+            let trail = document.createElement('div');
+            trail.className = 'trail';
+            document.body.appendChild(trail);
+            trails.push({
+                el: trail,
+                x: -20,
+                y: -20
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            let x = e.pageX;
+            let y = e.pageY;
+
+            trails.forEach((trail, index, arr) => {
+                const nextTrail = arr[index + 1] || arr[0];
+                
+                trail.x = x;
+                trail.y = y;
+                
+                const style = trail.el.style;
+                style.left = x - 4 + 'px';
+                style.top = y - 4 + 'px';
+
+                setTimeout(() => {
+                    nextTrail.x = trail.x;
+                    nextTrail.y = trail.y;
+                }, 10 * index);
+            });
+        });
+
+        // --- Masonry Project Data ---
+        const projects = [
+            {
+                title: "(Und)ictionary",
+                description: "A multilingual dictionary powered by Wiktionary and Wikimedia. Some AI included.",
+                link: "dictionary.html" // Replace with your actual project link
+            },
+            {
+                title: "Presentation Helper",
+                description: "Upload images and audio, then present them. Useful for online meetings.",
+                link: "PresentationStudio.html"
+            }
+        ];
+
+        // --- Inject Projects into Masonry Layout ---
+        const masonryContainer = document.getElementById('masonry-container');
+
+        projects.forEach(project => {
+            const item = document.createElement('div');
+            item.className = 'masonry-item';
+
+            item.innerHTML = `
+                <h3>${project.title}</h3>
+                <p>${project.description}</p>
+                <a href="${project.link}" target="_blank">Launch Tool ></a>
+            `;
+
+            masonryContainer.appendChild(item);
+        });
+    </script>
+
+</body>
 </html>
