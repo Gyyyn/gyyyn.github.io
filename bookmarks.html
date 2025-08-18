@@ -254,6 +254,7 @@
                     <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none animate-pop dark:bg-gray-900 dark:ring-gray-700" role="menu">
                         <div className="p-1" onClick={(e) => {
                           e.stopPropagation();
+                          setIsOpen(false);
                         }}>
                             {children}
                         </div>
@@ -271,7 +272,7 @@
       ];
 
       return (
-        <div className="flex items-center rounded-lg border border-slate-300 bg-white p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex justify-center items-center rounded-lg border border-slate-300 bg-white p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           {options.map(opt => (
             <button
               key={opt.value}
@@ -503,7 +504,7 @@
       );
     }
 
-    function Toolbar({ onAdd, onManageFolders, onExportJson, onImportJson, onExportHtml, onImportHtml, onClearAll, theme, setTheme }) {
+    function Toolbar({ onAdd, onManageFolders, onExportJson, onImportJson, onExportHtml, onImportHtml, onClearAll, onOpenCommandPalette, theme, setTheme }) {
       const jsonFileRef = useRef(null);
       const htmlFileRef = useRef(null);
 
@@ -524,7 +525,13 @@
 
       return (
         <div className="flex flex-wrap items-center gap-2">
-          <ThemeSwitcher theme={theme} setTheme={setTheme} />
+          {/* Moved file inputs here and added IDs */}
+          <input id="import-json-file" ref={jsonFileRef} type="file" accept="application/json" className="hidden" onChange={(e) => handleFileChange(e, onImportJson)} />
+          <input id="import-html-file" ref={htmlFileRef} type="file" accept="text/html,.html" className="hidden" onChange={(e) => handleFileChange(e, onImportHtml)} />
+
+          <DefaultButton onClick={onOpenCommandPalette} className="hidden sm:inline-flex">
+            <span className="text-xs">⌘K</span>
+          </DefaultButton>
           <div className="h-6 w-px bg-slate-200 dark:bg-gray-700 mx-2"></div>
           <PrimaryButton onClick={onAdd}>+ Add Bookmark</PrimaryButton>
           <DefaultButton onClick={onManageFolders}>Manage Folders</DefaultButton>
@@ -534,14 +541,19 @@
             </DefaultButton>
           }>
             <div className="">
+              <ThemeSwitcher theme={theme} setTheme={setTheme} />
+
+              <div className="border-t my-1 dark:border-gray-700"></div>
+
               <button onClick={onExportHtml} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" role="menuitem">Export HTML</button>
               <button onClick={() => htmlFileRef.current?.click()} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" role="menuitem">Import HTML</button>
+
               <div className="border-t my-1 dark:border-gray-700"></div>
+
               <button onClick={onExportJson} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" role="menuitem">Export JSON</button>
               <button onClick={() => jsonFileRef.current?.click()} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" role="menuitem">Import JSON</button>
               
-              <input ref={jsonFileRef} type="file" accept="application/json" className="hidden" onChange={(e) => handleFileChange(e, onImportJson)} />
-              <input ref={htmlFileRef} type="file" accept="text/html,.html" className="hidden" onChange={(e) => handleFileChange(e, onImportHtml)} />
+              {/* Inputs removed from here */}
               
               <div className="border-t my-1 dark:border-gray-700"></div>
               <button onClick={onClearAll} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/50" role="menuitem">Clear All</button>
@@ -803,6 +815,109 @@
       );
     }
 
+    // --- Command Palette Component ---
+    function CommandPalette({ open, onClose, commands }) {
+      const [query, setQuery] = useState("");
+      const [selectedIndex, setSelectedIndex] = useState(0);
+      const inputRef = useRef(null);
+      const listRef = useRef(null);
+
+      useEffect(() => {
+        if (open) {
+          // Reset state when opening
+          setQuery("");
+          setSelectedIndex(0);
+          // Focus input after a short delay to ensure it's rendered
+          setTimeout(() => inputRef.current?.focus(), 100);
+        }
+      }, [open]);
+
+      const filteredCommands = useMemo(() => {
+        if (!query.trim()) return commands;
+        const q = query.trim().toLowerCase();
+        return commands.filter(cmd => cmd.name.toLowerCase().includes(q));
+      }, [commands, query]);
+
+      useEffect(() => {
+        // Reset index if filtered commands change
+        setSelectedIndex(0);
+      }, [filteredCommands]);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (!open) return;
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSelectedIndex(i => (i + 1) % filteredCommands.length);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelectedIndex(i => (i - 1 + filteredCommands.length) % filteredCommands.length);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const command = filteredCommands[selectedIndex];
+            if (command) {
+              command.action();
+              onClose();
+            }
+          } else if (e.key === 'Escape') {
+            onClose();
+          }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+      }, [open, onClose, filteredCommands, selectedIndex]);
+      
+      useEffect(() => {
+        // Scroll the selected item into view
+        if (listRef.current) {
+          const selectedElement = listRef.current.children[selectedIndex];
+          selectedElement?.scrollIntoView({ block: 'nearest' });
+        }
+      }, [selectedIndex]);
+
+      if (!open) return null;
+
+      return (
+        <div className="fixed inset-0 z-50 grid place-items-start justify-center bg-black/50 p-4 pt-[15vh]" onClick={onClose}>
+          <div
+            className="w-full max-w-lg animate-pop overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-950 dark:border dark:border-gray-800"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="border-b border-slate-200 p-2 dark:border-gray-800">
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Type a command or search..."
+                className="w-full bg-transparent px-2 py-2 text-sm focus:outline-none"
+              />
+            </div>
+            <ul ref={listRef} className="max-h-[40vh] overflow-auto p-2">
+              {filteredCommands.length > 0 ? filteredCommands.map((cmd, index) => (
+                <li key={cmd.name}>
+                  <button
+                    onClick={() => { cmd.action(); onClose(); }}
+                    className={classNames(
+                      "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm",
+                      index === selectedIndex ? "bg-slate-100 dark:bg-gray-800" : "hover:bg-slate-100 dark:hover:bg-gray-800"
+                    )}
+                  >
+                    <span className="flex items-center gap-3">
+                      <span>{cmd.icon}</span>
+                      <span>{cmd.name}</span>
+                    </span>
+                    {cmd.shortcut && <span className="text-xs text-gray-500">{cmd.shortcut}</span>}
+                  </button>
+                </li>
+              )) : (
+                <li className="p-4 text-center text-sm text-gray-500">No commands found.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
     // --- Main App Component ---
     function App() {
       const [data, setData] = useState(loadData());
@@ -813,11 +928,30 @@
       const [isAddModalOpen, setAddModalOpen] = useState(false);
       const [isAnimatingAdd, setIsAnimatingAdd] = useState(false);
       const [isManageFoldersModalOpen, setManageFoldersModalOpen] = useState(false);
+      const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
       const [expandedFolders, setExpandedFolders] = useState([]);
       const [sortOrder, setSortOrder] = useState('default');
       const pendingBookmark = useRef(null);
+      const searchInputRef = useRef(null);
       
       const [theme, setThemeState] = useState(() => localStorage.getItem(THEME_KEY) || 'system');
+
+      // --- Auto-focus search input on page load ---
+      useEffect(() => {
+        searchInputRef.current?.focus();
+      }, []);
+
+      // --- Command Palette Shortcut (Cmd+K) ---
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            setCommandPaletteOpen(o => !o);
+          }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+      }, []);
 
       const setTheme = (newTheme) => {
         localStorage.setItem(THEME_KEY, newTheme);
@@ -1107,6 +1241,17 @@
         setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
       }
 
+      const commands = [
+        { name: 'Add Bookmark', icon: '➕', action: () => setAddModalOpen(true) },
+        { name: 'Search', icon: '🔍', action: () => searchInputRef.current?.focus() },
+        { name: 'Manage Folders', icon: '📁', action: () => setManageFoldersModalOpen(true) },
+        { name: 'Import from JSON', icon: '📥', action: () => document.getElementById('import-json-file')?.click() },
+        { name: 'Export to JSON', icon: '📤', action: exportJson },
+        { name: 'Import from HTML', icon: '📥', action: () => document.getElementById('import-html-file')?.click() },
+        { name: 'Export to HTML', icon: '📤', action: exportHtml },
+        { name: 'Clear All Data', icon: '🗑️', action: clearAll },
+      ];
+
       return (
         <div className="mx-auto max-w-7xl px-4 py-8">
           <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1122,6 +1267,7 @@
               onExportHtml={exportHtml}
               onImportHtml={importHtml}
               onClearAll={clearAll}
+              onOpenCommandPalette={() => setCommandPaletteOpen(true)}
               theme={theme}
               setTheme={setTheme}
             />
@@ -1133,9 +1279,10 @@
                   <div className="grid gap-2 flex-grow">
                     <label className="text-sm font-medium">Search</label>
                     <input
+                      ref={searchInputRef}
                       value={query}
                       onChange={e => setQuery(e.target.value)}
-                      placeholder="Search title, URL, tags"
+                      placeholder="Search title, URL, tags... (⌘K for actions)"
                       className="focus-ring w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400"
                     />
                   </div>
@@ -1202,6 +1349,11 @@
             onAddFolder={addFolder}
             onRenameFolder={renameFolder}
             onDeleteFolder={deleteFolder}
+          />
+          <CommandPalette
+            open={isCommandPaletteOpen}
+            onClose={() => setCommandPaletteOpen(false)}
+            commands={commands}
           />
         </div>
       );
