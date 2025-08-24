@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <title>Bookmark Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/png" href="bookmark.png">
+  <link rel="icon" type="image/png" href="bookmarks.png">
   <!-- Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -252,7 +252,7 @@
             <div className="relative" ref={ref}>
                 <div onClick={() => setIsOpen(o => !o)}>{trigger}</div>
                 {isOpen && (
-                    <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none animate-pop dark:bg-gray-900 dark:ring-gray-700" role="menu">
+                    <div className="absolute left-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none animate-pop dark:bg-gray-900 dark:ring-gray-700" role="menu">
                         <div className="p-1" onClick={(e) => {
                           e.stopPropagation();
                           setIsOpen(false);
@@ -919,6 +919,27 @@
       );
     }
 
+    function SearchResultItem({ bookmark }) {
+        const [imgSrc, setImgSrc] = useState(getFaviconUrl(bookmark.url).primary);
+        const { fallback } = getFaviconUrl(bookmark.url);
+        const host = prettyHostname(bookmark.url);
+
+        return (
+            <a href={bookmark.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800">
+                <img 
+                    src={imgSrc} 
+                    onError={() => { if (imgSrc !== fallback && fallback) setImgSrc(fallback); }}
+                    className="w-6 h-6 rounded"
+                    alt=""
+                />
+                <div className="flex-grow truncate">
+                    <div className="text-sm font-medium truncate">{bookmark.title}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{host}</div>
+                </div>
+            </a>
+        );
+    }
+
     // --- Main App Component ---
     function App() {
       const [data, setData] = useState(loadData());
@@ -993,46 +1014,54 @@
         return Array.from(set).sort((a,b) => a.localeCompare(b));
       }, [data]);
 
-      const { displayItems, bookmarksByFolder } = useMemo(() => {
-        let filteredBookmarks = data.bookmarks.slice();
-        
+      const filteredBookmarks = useMemo(() => {
+        if (!data) return [];
+        let bookmarks = data.bookmarks.slice();
         if (query.trim()) {
-          const q = query.trim().toLowerCase();
-          filteredBookmarks = filteredBookmarks.filter(b =>
-            b.title.toLowerCase().includes(q) ||
-            b.url.toLowerCase().includes(q) ||
-            b.tags.some(t => t.toLowerCase().includes(q))
-          );
+            const q = query.trim().toLowerCase();
+            bookmarks = bookmarks.filter(b =>
+                b.title.toLowerCase().includes(q) ||
+                b.url.toLowerCase().includes(q) ||
+                b.tags.some(t => t.toLowerCase().includes(q))
+            );
         }
         if (activeTags.length) {
-          filteredBookmarks = filteredBookmarks.filter(b => activeTags.every(t => b.tags.includes(t)));
+            bookmarks = bookmarks.filter(b => activeTags.every(t => b.tags.includes(t)));
         }
+        return bookmarks;
+    }, [data, query, activeTags]);
 
+      const { displayItems, bookmarksByFolder } = useMemo(() => {
         const sortFn = (a, b) => {
-          const aName = a.title || a.name;
-          const bName = b.title || b.name;
-          if (sortOrder === 'az') return aName.localeCompare(bName);
-          if (sortOrder === 'za') return bName.localeCompare(aName);
-          if (sortOrder === 'default' && a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
-          return 0;
+            const aName = a.title || a.name;
+            const bName = b.title || b.name;
+            if (sortOrder === 'az') return aName.localeCompare(bName);
+            if (sortOrder === 'za') return bName.localeCompare(aName);
+            if (sortOrder === 'default' && a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
+            return 0;
         };
         
         const sortedBookmarks = [...filteredBookmarks].sort(sortFn);
 
         const bookmarksByFolder = sortedBookmarks.reduce((acc, bm) => {
-          const folderId = bm.folderId || 'root';
-          if (!acc[folderId]) acc[folderId] = [];
-          acc[folderId].push(bm);
-          return acc;
+            const folderId = bm.folderId || 'root';
+            if (!acc[folderId]) acc[folderId] = [];
+            acc[folderId].push(bm);
+            return acc;
         }, {});
-        
-        const sortedFolders = [...data.folders.filter(f => f.id !== 'root')].sort(sortFn);
-        const rootBookmarks = bookmarksByFolder['root'] || [];
+
+        let sortedFolders = [];
+        let rootBookmarks = [];
+
+        if (data && data.folders) {
+            sortedFolders = [...data.folders.filter(f => f.id !== 'root')].sort(sortFn);
+            rootBookmarks = bookmarksByFolder['root'] || [];
+        }
         
         const displayItems = [...sortedFolders, ...rootBookmarks];
 
         return { displayItems, bookmarksByFolder };
-      }, [data, query, activeTags, sortOrder]);
+      }, [data, filteredBookmarks, sortOrder]);
 
       function toggleFolder(folderId) {
         setExpandedFolders(prev => 
@@ -1251,6 +1280,12 @@
         { name: 'Import from HTML', icon: '📥', action: () => document.getElementById('import-html-file')?.click() },
         { name: 'Export to HTML', icon: '📤', action: exportHtml },
         { name: 'Clear All Data', icon: '🗑️', action: clearAll },
+        {
+          name: 'Get it on the Chrome Web Store', icon: '🎁',
+          action: () => {
+            window.open('https://google.com', '_blank').focus();
+          }
+        }
       ];
 
       return (
@@ -1275,21 +1310,32 @@
           </header>
 
           <div className="mb-4 grid gap-4">
-             <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft dark:bg-gray-950 dark:border-gray-800">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div className="grid gap-2 flex-grow">
-                    <label className="text-sm font-medium">Search</label>
-                    <input
-                      ref={searchInputRef}
-                      value={query}
-                      onChange={e => setQuery(e.target.value)}
-                      placeholder="Search title, URL, tags... (⌘K for actions)"
-                      className="focus-ring w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400"
-                    />
-                  </div>
-                  <SortControl sortOrder={sortOrder} setSortOrder={setSortOrder} />
+            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft dark:bg-gray-950 dark:border-gray-800">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div className="grid gap-2 flex-grow relative">
+                <label className="text-sm font-medium">Search</label>
+                <input
+                    ref={searchInputRef}
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder="Search title, URL, tags... (⌘K for actions)"
+                    className="focus-ring w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400"
+                />
                 </div>
+                {query.trim() && filteredBookmarks.length > 0 && filteredBookmarks.length < 4 && (
+                  <div className="absolute left-0 w-1/2 ms-6">
+                    <div className="absolute top-full mt-2 w-full rounded-lg border border-slate-200 bg-white shadow-lg dark:bg-gray-900 dark:border-gray-700 z-10 animate-pop">
+                      <div className="p-2">
+                        {filteredBookmarks.map(bm => (
+                          <SearchResultItem key={bm.id} bookmark={bm} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <SortControl sortOrder={sortOrder} setSortOrder={setSortOrder} />
               </div>
+            </div>
             <TagFilter
               tags={allTags}
               activeTags={activeTags}
