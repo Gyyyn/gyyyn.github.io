@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guyrá Exercise Generator</title>
+    <link rel="icon" type="image/png" href="ExerciseGenerator.png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and Babel CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/html-react-parser@latest/dist/html-react-parser.min.js"></script>
+    <!-- Markdown-it CDN for parsing Markdown from AI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.2/markdown-it.min.js"></script>
+    <style>
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Simple transition for the sidebar */
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+        .main-content-transition {
+            transition: margin-left 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- DATA ---
+        // Language strings for multi-language support
+        const languageStrings = {
+            en: {
+                title: "Guyrá Exercise Generator",
+                difficulty: "Difficulty",
+                beginner: "Beginner",
+                intermediate: "Intermediate",
+                advanced: "Advanced",
+                grammarTopic: "Grammar Topic",
+                theme: "Theme / Vocabulary",
+                generate: "Generate Exercise",
+                generating: "Generating...",
+                savedExercises: "Saved Exercises",
+                noExercise: "Generate an exercise to get started!",
+                viewing: "Viewing:",
+                toggleAnswerKey: "Toggle Answer Key",
+                delete: "Delete",
+                noSelection: "Select a topic and theme",
+                welcomeTitle: "Welcome to the ESL Exercise Generator",
+                welcomeMessage: "Select your desired difficulty, grammar topic, and theme, then click 'Generate Exercise' to create a custom worksheet. Your creations will be saved on the left.",
+                apiError: "Sorry, there was an error generating the exercise. Please try again.",
+            },
+            es: {
+                title: "Generador de Ejercicios Guyrá",
+                difficulty: "Dificultad",
+                beginner: "Principiante",
+                intermediate: "Intermedio",
+                advanced: "Avanzado",
+                grammarTopic: "Tema Gramatical",
+                theme: "Tema / Vocabulario",
+                generate: "Generar Ejercicio",
+                generating: "Generando...",
+                savedExercises: "Ejercicios Guardados",
+                noExercise: "¡Genera un ejercicio para empezar!",
+                viewing: "Viendo:",
+                toggleAnswerKey: "Mostrar/Ocultar Clave de Respuestas",
+                delete: "Eliminar",
+                noSelection: "Selecciona un tema y un tema",
+                welcomeTitle: "Bienvenido al Generador de Ejercicios de Inglés",
+                welcomeMessage: "Selecciona la dificultad, el tema gramatical y el tema que desees, luego haz clic en 'Generar Ejercicio' para crear una hoja de trabajo personalizada. Tus creaciones se guardarán a la izquierda.",
+                apiError: "Lo sentimos, hubo un error al generar el ejercicio. Por favor, inténtalo de nuevo.",
+            },
+            fr: {
+                title: "Générateur d'Exercices Guyrá",
+                difficulty: "Difficulté",
+                beginner: "Débutant",
+                intermediate: "Intermédiaire",
+                avanced: "Avancé",
+                grammarTopic: "Sujet de Grammaire",
+                theme: "Thème / Vocabulaire",
+                generate: "Générer l'Exercice",
+                generating: "Génération...",
+                savedExercises: "Exercices Sauvegardés",
+                noExercise: "Générez un exercice pour commencer !",
+                viewing: "Affichage de :",
+                toggleAnswerKey: "Afficher/Masquer le Corrigé",
+                delete: "Supprimer",
+                noSelection: "Sélectionnez un sujet et un thème",
+                welcomeTitle: "Bienvenue au Générateur d'Exercices d'Anglais",
+                welcomeMessage: "Sélectionnez la difficulté, le sujet de grammaire et le thème souhaités, puis cliquez sur 'Générer l'exercice' pour créer une feuille de travail personnalisée. Vos créations seront sauvegardées à gauche.",
+                apiError: "Désolé, une erreur s'est produite lors de la génération de l'exercice. Veuillez réessayer.",
+            }
+        };
+
+        // Static data for selection chips
+        const grammarTopics = ["Present Simple", "Past Continuous", "Future Perfect", "Conditionals (All types)", "Modal Verbs", "Passive Voice", "Reported Speech", "Gerunds & Infinitives", "Phrasal Verbs", "Articles (a, an, the)", "Prepositions of Place", "Relative Clauses", "Quantifiers", "Determiners", "Question Tags"];
+        const themes = ["Workplace", "Lifestyle", "Technology", "Travel", "Health & Fitness", "Movies & TV", "Music", "Food & Cooking", "Home & Garden", "Science", "History", "Art & Culture", "Sports", "Fashion", "Nature"];
+        const cefrLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+        // --- Main App Component ---
+        function App() {
+            // --- STATE MANAGEMENT ---
+            const [language, setLanguage] = useState('en');
+            const [difficulty, setDifficulty] = useState(2); // Default to B1
+            const [selectedTopic, setSelectedTopic] = useState(null);
+            const [selectedTheme, setSelectedTheme] = useState(null);
+            const [exercises, setExercises] = useState([]);
+            const [currentExercise, setCurrentExercise] = useState(null);
+            const [sidebarOpen, setSidebarOpen] = useState(false);
+            const [isLoading, setIsLoading] = useState(false);
+            const [isAnswerKeyVisible, setAnswerKeyVisible] = useState(false);
+            const [errorMessage, setErrorMessage] = useState('');
+
+            const md = new window.markdownit();
+            const text = useMemo(() => languageStrings[language], [language]);
+
+            // --- LIFECYCLE HOOKS ---
+            // Load exercises from localStorage on initial render
+            useEffect(() => {
+                try {
+                    const savedExercises = localStorage.getItem('eslExercises');
+                    if (savedExercises) {
+                        const parsedExercises = JSON.parse(savedExercises);
+                        setExercises(parsedExercises);
+                        if (parsedExercises.length > 0) {
+                            setCurrentExercise(parsedExercises[0]);
+                            setSidebarOpen(true);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to parse exercises from localStorage:", error);
+                    localStorage.removeItem('eslExercises');
+                }
+            }, []);
+            
+            // --- API & DATA HANDLING ---
+            // Function to generate exercise using the Gemini API
+            const handleGenerateExercise = async () => {
+                if (!selectedTopic || !selectedTheme) {
+                    console.warn("Topic or theme not selected");
+                    return;
+                }
+                setIsLoading(true);
+                setErrorMessage('');
+                setCurrentExercise(null); // Clear previous exercise
+                setAnswerKeyVisible(false);
+
+                const prompt = `
+Purpose and Goals:Act as an AI assistant for ESL students, specializing in creating assignments and exercises customized to the students requests.
+Generate exercises and assignments that align with the user's specified CEFR level below (A1, B2, etc.).
+Ensure exercises are varied while using similar vocabulary to maximize new word retention.
+Generate a variety of exercises, such as fill-in-the-blanks, sentence rewriting, short answer questions, or creative writing prompts.
+Ensure all exercises use a consistent set of new vocabulary words to reinforce learning.
+Behaviors and Rules:
+a. Do not greet the user, you will only generate the exercises and the answer key.
+b. Generate five exercises in increasing difficulty, but not exceeding ${cefrLevels[difficulty]}
+c. The grammatical focus is ${selectedTopic}.
+d. The vocabulary theme is ${selectedTheme}.
+e. Ensure all exercises use a consistent set of new vocabulary words to reinforce learning.
+f. Provide a clear and concise answer key ALWAYS at the end of the exercise with a markdown H2 header named "Answer Key".
+g. The entire output must be in Markdown format.
+
+Tone and Style:
+a. Maintain a professional, helpful, and encouraging tone, as if you are a teaching colleague.
+b. Use clear and simple language in the instructions so they are easy for students to understand.
+c. Be concise and to the point in your responses.
+                `;
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = "AIzaSyDr2w2ji-CIqj99wEpnoZZBBfaHtiRkghI"; // API key is handled by the environment
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API request failed with status ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    // Safely access the response text
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        
+                        const aiText = result.candidates[0].content.parts[0].text;
+                        
+                        // Split content at the "Answer Key" header
+                        const answerKeyIdentifier = "\n## Answer Key\n";
+                        const contentParts = aiText.split(answerKeyIdentifier);
+                        const mainContent = contentParts[0];
+                        const answerKeyContent = contentParts.length > 1 ? contentParts[1] : "";
+
+                        const newExercise = {
+                            id: Date.now(),
+                            title: `${cefrLevels[difficulty]} - ${selectedTopic} - ${selectedTheme}`,
+                            content: md.render(mainContent),
+                            answerKey: md.render(answerKeyContent),
+                        };
+
+                        const updatedExercises = [newExercise, ...exercises];
+                        setExercises(updatedExercises);
+                        setCurrentExercise(newExercise);
+                        localStorage.setItem('eslExercises', JSON.stringify(updatedExercises));
+                        if (!sidebarOpen) setSidebarOpen(true);
+                    } else {
+                        // Handle cases where the response structure is unexpected
+                        throw new Error("Invalid response structure from API.");
+                    }
+
+                } catch (error) {
+                    console.error("Error generating exercise:", error);
+                    setErrorMessage(text.apiError);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            // --- EVENT HANDLERS ---
+            const handleSelectExercise = (id) => {
+                const exercise = exercises.find(ex => ex.id === id);
+                setCurrentExercise(exercise);
+                setAnswerKeyVisible(false); // Hide answer key when switching
+                setErrorMessage(''); // Clear any previous errors
+            };
+
+            const handleDeleteExercise = (idToDelete) => {
+                const updatedExercises = exercises.filter(ex => ex.id !== idToDelete);
+                setExercises(updatedExercises);
+                localStorage.setItem('eslExercises', JSON.stringify(updatedExercises));
+                if (currentExercise && currentExercise.id === idToDelete) {
+                    setCurrentExercise(updatedExercises.length > 0 ? updatedExercises[0] : null);
+                }
+                if (updatedExercises.length === 0) {
+                    setSidebarOpen(false);
+                }
+            };
+
+            // --- RENDER HELPER COMPONENTS ---
+            const Chip = ({ label, isSelected, onClick }) => (
+                <button
+                    onClick={onClick}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-full shadow-sm transition-all duration-200 ${
+                        isSelected
+                            ? 'bg-indigo-600 text-white scale-105 shadow-lg'
+                            : 'bg-white text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                    {label}
+                </button>
+            );
+
+            // --- MAIN RENDER ---
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    {/* --- SIDEBAR --- */}
+                    <aside className={`sidebar-transition absolute lg:relative z-20 w-64 bg-white shadow-lg h-full flex-shrink-0 ${sidebarOpen ? 'transform-none' : '-translate-x-full hidden'}`}>
+                        <div className="p-4 flex justify-between items-center border-b">
+                            <h2 className="text-lg font-bold text-gray-800">{text.savedExercises}</h2>
+                            <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-full hover:bg-gray-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+                            {exercises.map(ex => (
+                                <div key={ex.id} className={`group flex items-center justify-between p-2 rounded-md cursor-pointer ${currentExercise?.id === ex.id ? 'bg-indigo-100 text-indigo-800' : 'text-gray-600 hover:bg-gray-100'}`} onClick={() => handleSelectExercise(ex.id)}>
+                                    <span className="truncate text-sm font-medium">{ex.title}</span>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteExercise(ex.id); }} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 p-1 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </nav>
+                    </aside>
+
+                    {/* --- MAIN CONTENT --- */}
+                    <main className={`main-content-transition flex-1 flex flex-col overflow-y-auto ${sidebarOpen && 'lg:ml-0'}`}>
+                        <header className="bg-white shadow-sm p-4 z-10 sticky top-0">
+                            <div className="flex items-center justify-between">
+                                <button onClick={() => setSidebarOpen(true)} className={`p-2 rounded-md hover:bg-gray-200 ${sidebarOpen && 'hidden'}`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                </button>
+                                <h1 className="text-2xl font-bold text-gray-900">{text.title}</h1>
+                                <div className="flex items-center space-x-2">
+                                    <button onClick={() => setLanguage('en')} className={`px-3 py-1 text-sm rounded-md ${language === 'en' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}>EN</button>
+                                    <button onClick={() => setLanguage('es')} className={`px-3 py-1 text-sm rounded-md ${language === 'es' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}>ES</button>
+                                    <button onClick={() => setLanguage('fr')} className={`px-3 py-1 text-sm rounded-md ${language === 'fr' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}>FR</button>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div className="p-4 md:p-8 flex-1">
+                            {/* --- SETTINGS PANEL --- */}
+                            <div className="bg-white p-6 rounded-xl shadow-md mb-8 space-y-6">
+                                {/* Difficulty Slider */}
+                                <div>
+                                    <label className="text-lg font-semibold text-gray-800">{text.difficulty}</label>
+                                    <div className="relative mt-4">
+                                        <input type="range" min="0" max="5" value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                                        <div className="flex justify-between text-xs text-gray-500 mt-2 px-1">
+                                            {cefrLevels.map((level, index) => <span key={level} className="w-1/6 text-center font-semibold">{level}</span>)}
+                                        </div>
+                                        <div className="flex justify-between text-sm text-gray-700 mt-1 px-1">
+                                            <span className="w-1/3 text-left font-bold">{text.beginner}</span>
+                                            <span className="w-1/3 text-center font-bold">{text.intermediate}</span>
+                                            <span className="w-1/3 text-right font-bold">{text.advanced}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Grammar Topics */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">{text.grammarTopic}</h3>
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {grammarTopics.map(topic => <Chip key={topic} label={topic} isSelected={selectedTopic === topic} onClick={() => setSelectedTopic(topic)} />)}
+                                    </div>
+                                </div>
+
+                                {/* Themes */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">{text.theme}</h3>
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {themes.map(theme => <Chip key={theme} label={theme} isSelected={selectedTheme === theme} onClick={() => setSelectedTheme(theme)} />)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* --- GENERATE BUTTON --- */}
+                            <div className="text-center mb-8">
+                                <button
+                                    onClick={handleGenerateExercise}
+                                    disabled={isLoading || !selectedTopic || !selectedTheme}
+                                    className="w-full md:w-auto bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+                                >
+                                    {isLoading ? text.generating : text.generate}
+                                </button>
+                                {!selectedTopic || !selectedTheme && <p className="text-red-500 text-sm mt-2">{text.noSelection}</p>}
+                            </div>
+
+                            {/* --- EXERCISE DISPLAY --- */}
+                            <div className="bg-white p-6 md:p-8 rounded-xl shadow-md min-h-[300px]">
+                                {isLoading && (
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                        <svg className="animate-spin -ml-1 mr-3 h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <p className="mt-4 text-lg">{text.generating}</p>
+                                    </div>
+                                )}
+                                {!isLoading && errorMessage && (
+                                    <div className="text-center text-red-500 py-10">
+                                        <h2 className="text-2xl font-bold mb-2">Error</h2>
+                                        <p>{errorMessage}</p>
+                                    </div>
+                                )}
+                                {!isLoading && !errorMessage && !currentExercise && (
+                                    <div className="text-center text-gray-500 py-10">
+                                        <h2 className="text-2xl font-bold mb-2 text-gray-700">{text.welcomeTitle}</h2>
+                                        <p>{text.welcomeMessage}</p>
+                                    </div>
+                                )}
+                                {!isLoading && !errorMessage && currentExercise && (
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-800 mb-4">{text.viewing} <span className="text-indigo-600">{currentExercise.title}</span></h2>
+                                        <div className="prose max-w-none">
+                                            {window.HTMLReactParser(currentExercise.content)}
+                                        </div>
+                                        
+                                        {currentExercise.answerKey && (
+                                            <div className="mt-8 border-t pt-4">
+                                                <button onClick={() => setAnswerKeyVisible(!isAnswerKeyVisible)} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">
+                                                    {text.toggleAnswerKey}
+                                                </button>
+                                                {isAnswerKeyVisible && (
+                                                    <div className="prose max-w-none mt-4">
+                                                        {window.HTMLReactParser(currentExercise.answerKey)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+<style>
+    /* tailwind overwrites */
+    h1, h2, h3 {
+        margin-top: 1.125rem;
+        margin-bottom: 1.25rem;
+    }
+    h1 {
+        font-size: 1.5rem;
+        line-height: calc(2 / 1.5);
+    }
+    h2 {
+        font-size: 1.25rem;
+        line-height: calc(1.75 / 1.25);
+    }
+    h3 {
+        font-size: 1.125rem;
+        line-height: calc(1.75 / 1.125);
+    }
+    ul {
+        list-style-type: disc;
+    }
+    ol {
+        list-style-type: decimal;
+    }
+    p {
+        margin-bottom: 1.125rem;
+    }
+    i { font-style: italic; }
+    b { font-weight: bold;}
+</style>
+</html>

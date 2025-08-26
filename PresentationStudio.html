@@ -156,7 +156,7 @@
                 <div className="relative w-full">
                     <button
                         onClick={handleClick}
-                        className="relative z-10 flex items-center justify-center w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform transition-all duration-300 ease-in-out hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-blue-300 active:scale-95 group overflow-hidden"
+                        className="relative z-10 flex items-center justify-center w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform transition-all duration-300 ease-in-out hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-blue-300 active:scale-95 group overflow-hidden"
                     >
                         <span className="absolute inset-0 bg-white opacity-10 blur-sm group-hover:opacity-20 transition-opacity duration-300"></span>
                         {Icon && <Icon className="mr-2 h-5 w-5 opacity-80 group-hover:opacity-100 transition-opacity duration-300"/>}
@@ -347,8 +347,8 @@
             if (!currentImageSrc) return null;
 
             return (
-                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 animate-fadeIn">
-                    <div className="relative bg-white rounded-xl shadow-2xl p-4 md:p-6 max-w-full max-h-full flex flex-col items-center justify-center animate-zoomIn">
+                <div className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-fadeIn">
+                    <div className="relative bg-white rounded-xl shadow-2xl p-4 md:p-6 max-w-full flex flex-col items-center justify-center animate-zoomIn">
                         {/* Image */}
                         <img
                             src={currentImageSrc}
@@ -578,14 +578,11 @@
                 >
                     {/* Conditional rendering for header and subheader */}
                     <div className={`text-center transition-all duration-500 ease-out ${isContentUploaded ? 'opacity-0 h-0 overflow-hidden mb-0' : 'opacity-100 mb-10'}`}>
-                        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-6 leading-tight animate-pulse-subtle">
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+                        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-6 leading-tight">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500">
                                 Presentation Studio
                             </span>
                         </h1>
-                        <p className="text-lg text-gray-600 max-w-2xl">
-                            Effortlessly upload and manage your audio and image assets for your next brilliant presentation.
-                        </p>
                     </div>
 
                     {isMessageVisible && (
