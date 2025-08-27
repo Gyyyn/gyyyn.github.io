@@ -36,6 +36,31 @@
         .main-content-transition {
             transition: margin-left 0.3s ease-in-out;
         }
+        span.w-1\/6.text-center.font-semibold:first-child,
+        span.w-1\/6.text-center.font-semibold:nth-child(2) {
+            text-align: left;
+        }
+
+        span.w-1\/6.text-center.font-semibold:nth-child(2) {
+            padding-left: 2.25rem;
+        }
+
+        span.w-1\/6.text-center.font-semibold:nth-child(3) {
+            padding-right: 2.25rem;
+        }
+
+        span.w-1\/6.text-center.font-semibold:last-child,
+        span.w-1\/6.text-center.font-semibold:nth-child(5) {
+            text-align: right;
+        }
+
+        span.w-1\/6.text-center.font-semibold:nth-child(4) {
+            padding-left: 2.25rem;
+        }
+
+        span.w-1\/6.text-center.font-semibold:nth-child(5) {
+            padding-right: 2.25rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -110,8 +135,8 @@
         };
 
         // Static data for selection chips
-        const grammarTopics = ["Present Simple", "Past Continuous", "Future Perfect", "Conditionals (All types)", "Modal Verbs", "Passive Voice", "Reported Speech", "Gerunds & Infinitives", "Phrasal Verbs", "Articles (a, an, the)", "Prepositions of Place", "Relative Clauses", "Quantifiers", "Determiners", "Question Tags"];
-        const themes = ["Workplace", "Lifestyle", "Technology", "Travel", "Health & Fitness", "Movies & TV", "Music", "Food & Cooking", "Home & Garden", "Science", "History", "Art & Culture", "Sports", "Fashion", "Nature"];
+        const grammarTopics = ["Present Simple", "Present Perfect" , "Past Simple" , "Past Perfect", "Future Simple", "Past Continuous", "Future Perfect", "Conditionals (All types)", "Modal Verbs", "Passive Voice", "Reported Speech", "Gerunds & Infinitives", "Phrasal Verbs", "Prepositions of Place", "Relative Clauses", "Quantifiers", "Determiners and Articles", "Question Tags", "Comparatives and Superlatives", "Adjectives & Adverbs", "Homophones", "Participles & Gerunds", "Idioms", "Word Order"];
+        const themes = ["Workplace", "Lifestyle", "Technology", "Travel", "Health & Fitness", "Movies & TV", "Education", "Food & Drink", "Pets", "Fashion & Beauty", "Personal Growth", "Sports", "Holidays", "Romance", "Music", "Food & Cooking", "Home & Garden", "Science", "History", "Art & Culture", "Sports", "Fashion", "Nature", "Shopping", "Business & Finance", "Family & Relationships"];
         const cefrLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
         // --- Main App Component ---
@@ -440,10 +465,19 @@ c. Be concise and to the point in your responses.
     ol {
         list-style-type: decimal;
     }
+    li {
+        margin-left: 1.25rem;
+        padding-left: 1.125rem;
+        margin-bottom: .25rem;
+    }
     p {
         margin-bottom: 1.125rem;
     }
     i { font-style: italic; }
     b { font-weight: bold;}
+    .prose code {
+        font-family: sans-serif;
+        font-style: italic;
+    }
 </style>
 </html>
