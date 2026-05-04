@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultimate Speedometer & Driving Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=VT323&family=Teko:wght@500;700&family=Rajdhani:wght@500;700&display=swap');
+
+        :root {
+            /* Default Neon Theme Variables */
+            --bg-color: #050510;
+            --font-main: 'Orbitron', sans-serif;
+            --gauge-bg: radial-gradient(circle, rgba(10,10,25,0.8) 0%, rgba(5,5,15,0.95) 70%, rgba(0,0,0,1) 100%);
+            --gauge-border: none;
+            --gauge-shadow: 0 0 50px rgba(0, 255, 255, 0.1), inset 0 0 20px rgba(0, 255, 255, 0.1);
+            --text-color: #00ffff;
+            --text-shadow: 0 0 10px rgba(0,255,255,0.7), 0 0 20px rgba(0,255,255,0.5);
+            --unit-color: #888;
+            --needle-bg: linear-gradient(to top, rgba(255,255,255,0) 0%, #00ffff 20%, #ffffff 100%);
+            --needle-shadow: 0 0 15px #00ffff;
+            --pivot-bg: #111;
+            --pivot-border: 3px solid #00ffff;
+            --pivot-shadow: 0 0 20px #00ffff, inset 0 0 10px #00ffff;
+            --gear-color: rgba(255, 255, 255, 0.15);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: var(--font-main);
+            touch-action: none;
+            user-select: none;
+            transition: background-color 0.5s ease;
+        }
+
+        #app-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #warp-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* NEW: Cockpit Container */
+        #cockpit-container {
+            position: absolute;
+            bottom: -15vh; /* Drop the wheel slightly off the bottom */
+            left: 50%;
+            width: 800px;
+            height: 800px;
+            transform-origin: bottom center;
+            z-index: 20;
+            pointer-events: none; /* Let touches hit the road */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Rotating Wheel Overlay */
+        #steering-wheel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            will-change: transform;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.8));
+            transition: filter 0.5s;
+        }
+
+        /* The Fixed Gauge inside the Wheel */
+        .gauge-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            box-sizing: border-box; /* Crucial so borders don't expand the gauge */
+            background: var(--gauge-bg);
+            border: var(--gauge-border);
+            box-shadow: var(--gauge-shadow);
+            transition: box-shadow 0.1s ease-out, background 0.5s, border 0.5s;
+            z-index: 5;
+        }
+
+        #gauge-svg, #rpm-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+        #rpm-svg { z-index: 11; }
+
+        .needle-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        #needle {
+            position: absolute;
+            bottom: 50%;
+            left: calc(50% - 4px);
+            width: 8px;
+            height: 130px;
+            background: var(--needle-bg);
+            transform-origin: bottom center;
+            transform: rotate(-135deg);
+            border-radius: 4px 4px 0 0;
+            box-shadow: var(--needle-shadow);
+            will-change: transform;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .pivot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            background: var(--pivot-bg);
+            border: var(--pivot-border);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: var(--pivot-shadow);
+            z-index: 20;
+            transition: all 0.3s;
+        }
+
+        .digital-display {
+            position: absolute;
+            top: 65%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(var(--speed-scale, 1));
+            text-align: center;
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            will-change: transform;
+        }
+
+        #speed-value {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--text-color);
+            text-shadow: var(--text-shadow);
+            font-variant-numeric: tabular-nums;
+            transition: color 0.1s, text-shadow 0.1s;
+        }
+
+        #speed-unit {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--unit-color);
+            letter-spacing: 2px;
+            text-shadow: none;
+            margin-top: -5px;
+            transition: color 0.3s;
+        }
+
+        #gear-display {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--gear-color);
+            z-index: 12;
+            font-style: italic;
+            transition: color 0.3s;
+        }
+
+        .shake { animation: shake 0.2s infinite; }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .instructions {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2rem;
+            text-align: center;
+            z-index: 30;
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: pulse 2s infinite;
+            text-shadow: 0 4px 8px rgba(0,0,0,1);
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+        /* Control Panel */
+        .controls-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+        }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        .control-label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; font-family: sans-serif; }
+        .control-row { display: flex; gap: 5px; justify-content: flex-end; }
+        .neo-btn {
+            background: rgba(10, 10, 25, 0.8);
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 6px 10px;
+            font-family: sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        .neo-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        .neo-btn.active { background: #fff; color: #000; box-shadow: 0 0 10px #fff; }
+        
+        .btn-theme-neon.active { background: #00ffff; border-color: #00ffff; box-shadow: 0 0 10px #00ffff; color: #000; }
+        .btn-theme-vintage.active { background: #d4af37; border-color: #d4af37; box-shadow: 0 0 10px #d4af37; color: #000; }
+        .btn-theme-80s.active { background: #ff00ff; border-color: #ff00ff; box-shadow: 0 0 10px #ff00ff; color: #000; }
+        .btn-theme-00s.active { background: #00ff00; border-color: #00ff00; box-shadow: 0 0 10px #00ff00; color: #000; }
+        .btn-theme-digital.active { background: #38bdf8; border-color: #38bdf8; box-shadow: 0 0 10px #38bdf8; color: #000; }
+        .btn-engine.active { background: #00ffff; border-color: #00ffff; color: #000;}
+        .neo-btn.turbo-btn { border-color: #ff0055; color: #ff0055; width: 100%; margin-top: 5px;}
+        .neo-btn.turbo-btn:hover { background: rgba(255, 0, 85, 0.2); }
+        .neo-btn.turbo-btn.active { background: #ff0055; color: #fff; box-shadow: 0 0 20px #ff0055; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <canvas id="warp-canvas"></canvas>
+
+    <div class="instructions" id="instructions">
+        Hold Space or Touch to Accel<br>Arrows or Drag to Steer
+    </div>
+
+    <!-- The Driver's Cockpit -->
+    <div id="cockpit-container">
+        <!-- Rotates with steering -->
+        <div id="steering-wheel"></div>
+        
+        <!-- Fixed orientation gauge inside the wheel center -->
+        <div id="gauge" class="gauge-container">
+            <svg id="gauge-svg" viewBox="0 0 350 350"></svg>
+            <svg id="rpm-svg" viewBox="0 0 350 350">
+                <circle id="rpm-bg" cx="175" cy="175" r="130" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="8" stroke-dasharray="816.8" stroke-dashoffset="204.2" transform="rotate(135, 175, 175)" />
+                <circle id="rpm-bar" cx="175" cy="175" r="130" fill="none" stroke="#00ffff" stroke-width="8" stroke-dasharray="816.8" stroke-dashoffset="816.8" stroke-linecap="round" transform="rotate(135, 175, 175)" style="transition: stroke 0.2s;" />
+            </svg>
+            <div id="gear-display">1</div>
+            <div class="needle-container"><div id="needle"></div></div>
+            <div class="pivot" id="pivot-cap"></div>
+            <div class="digital-display" id="digital-container">
+                <div id="speed-value">0</div>
+                <div id="speed-unit">KM/H</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-panel">
+        <div class="control-group">
+            <span class="control-label">Style Era</span>
+            <div class="control-row">
+                <button id="theme-neon" class="neo-btn btn-theme-neon active" onclick="setTheme('neon')">Neon</button>
+                <button id="theme-vintage" class="neo-btn btn-theme-vintage" onclick="setTheme('vintage')">Vintage</button>
+                <button id="theme-80s" class="neo-btn btn-theme-80s" onclick="setTheme('80s')">80s</button>
+                <button id="theme-00s" class="neo-btn btn-theme-00s" onclick="setTheme('00s')">00s</button>
+                <button id="theme-digital" class="neo-btn btn-theme-digital" onclick="setTheme('digital')">Digital</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <span class="control-label">Engine Block</span>
+            <div class="control-row">
+                <button id="btn-i3" class="neo-btn btn-engine" onclick="setEngine('I3')">I3</button>
+                <button id="btn-i4" class="neo-btn btn-engine active" onclick="setEngine('I4')">I4</button>
+                <button id="btn-v6" class="neo-btn btn-engine" onclick="setEngine('V6')">V6</button>
+                <button id="btn-v8" class="neo-btn btn-engine" onclick="setEngine('V8')">V8</button>
+            </div>
+            <button id="btn-turbo" class="neo-btn turbo-btn" onclick="toggleTurbo()">TURBO: OFF</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Responsive Scaling ---
+    function updateCockpitScale() {
+        const cockpit = document.getElementById('cockpit-container');
+        // Scale down the entire cockpit if the screen width is small to maintain realism
+        const scale = Math.min(1, window.innerWidth / 850);
+        cockpit.style.transform = `translateX(-50%) scale(${scale})`;
+    }
+    window.addEventListener('resize', updateCockpitScale);
+    updateCockpitScale();
+
+    // --- THEME & ENVIRONMENT SYSTEM ---
+    const themes = {
+        'neon': {
+            css: {
+                '--bg-color': '#050510',
+                '--font-main': "'Orbitron', sans-serif",
+                '--gauge-bg': 'radial-gradient(circle, rgba(10,10,25,0.8) 0%, rgba(5,5,15,0.95) 70%, rgba(0,0,0,1) 100%)',
+                '--gauge-border': 'none',
+                '--unit-color': '#888',
+                '--gear-color': 'rgba(255,255,255,0.15)',
+                '--pivot-bg': '#111'
+            },
+            road: { sky: '#050510', grass: '#020205', road: '#0a0a15', stripe: '#00ffff', edge: '#ff00ff', poles: '#00ffff' },
+            drawTick: (speedPct, isMajor) => ({ color: `hsl(${180 - (speedPct * 180)}, 100%, 50%)`, opacity: isMajor ? 0.9 : 0.5 }),
+            updateUI: (speedPct) => {
+                const colorStr = `hsl(${180 - (speedPct * 180)}, 100%, 50%)`;
+                const glowStr = `hsla(${180 - (speedPct * 180)}, 100%, 50%, 0.7)`;
+                document.body.style.setProperty('--text-color', colorStr);
+                document.body.style.setProperty('--text-shadow', `0 0 10px ${glowStr}, 0 0 20px ${glowStr}`);
+                document.body.style.setProperty('--needle-bg', `linear-gradient(to top, rgba(255,255,255,0) 0%, ${colorStr} 20%, #ffffff 100%)`);
+                document.body.style.setProperty('--needle-shadow', `0 0 15px ${colorStr}`);
+                document.body.style.setProperty('--pivot-border', `3px solid ${colorStr}`);
+                document.body.style.setProperty('--pivot-shadow', `0 0 20px ${glowStr}, inset 0 0 10px ${glowStr}`);
+                document.body.style.setProperty('--gauge-shadow', `0 0 ${20 + speedPct * 50}px ${glowStr}, inset 0 0 ${10 + speedPct * 20}px ${glowStr}`);
+            },
+            wheelSvg: `
+                <svg viewBox="0 0 800 800" style="width:100%; height:100%;">
+                    <!-- Neon Yoke -->
+                    <path d="M 150 400 C 100 550, 150 700, 250 750 C 350 780, 450 780, 550 750 C 650 700, 700 550, 650 400 L 580 400 C 600 550, 550 650, 450 680 C 350 700, 250 650, 220 400 Z" fill="rgba(10,10,25,0.9)" stroke="#00ffff" stroke-width="8" filter="drop-shadow(0 0 10px #00ffff)"/>
+                    <!-- Center Ring surrounding gauge (r=185 leaves a 10px gap around the 350px gauge) -->
+                    <circle cx="400" cy="400" r="185" fill="none" stroke="#00ffff" stroke-width="4" stroke-dasharray="20 10" filter="drop-shadow(0 0 5px #00ffff)"/>
+                    <!-- Connecting Spokes -->
+                    <path d="M 215 400 L 250 400 M 585 400 L 550 400 M 400 585 L 400 680" stroke="#00ffff" stroke-width="8" filter="drop-shadow(0 0 10px #00ffff)"/>
+                </svg>`
+        },
+        'vintage': {
+            css: {
+                '--bg-color': '#2a231f',
+                '--font-main': "'Playfair Display', serif",
+                '--gauge-bg': '#eaddcf',
+                '--gauge-border': '10px solid #5c4033',
+                '--gauge-shadow': 'inset 0 0 40px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.8)',
+                '--text-color': '#3e2723',
+                '--text-shadow': 'none',
+                '--unit-color': '#5c4033',
+                '--needle-bg': '#8b0000',
+                '--needle-shadow': '2px 5px 5px rgba(0,0,0,0.5)',
+                '--pivot-bg': '#b89947', 
+                '--pivot-border': '2px solid #5c4033',
+                '--pivot-shadow': 'inset 0 0 5px rgba(0,0,0,0.5), 2px 5px 5px rgba(0,0,0,0.5)',
+                '--gear-color': 'rgba(92, 64, 51, 0.1)'
+            },
+            road: { sky: '#dcbca0', grass: '#a08060', road: '#8b7355', stripe: 'rgba(0,0,0,0)', edge: '#6b5335', poles: '#4a3320' },
+            drawTick: (speedPct, isMajor) => ({ color: '#3e2723', opacity: isMajor ? 1 : 0.6 }),
+            updateUI: () => {},
+            wheelSvg: `
+                <svg viewBox="0 0 800 800" style="width:100%; height:100%;">
+                    <!-- Outer wood rim -->
+                    <circle cx="400" cy="400" r="380" fill="none" stroke="#6b4226" stroke-width="40" filter="drop-shadow(5px 10px 10px rgba(0,0,0,0.5))"/>
+                    <circle cx="400" cy="400" r="360" fill="none" stroke="#8b5a2b" stroke-width="15"/>
+                    <!-- Inner metal rim framing the gauge -->
+                    <circle cx="400" cy="400" r="190" fill="none" stroke="#c0c0c0" stroke-width="20" filter="drop-shadow(2px 5px 5px rgba(0,0,0,0.5))"/>
+                    <!-- Spokes -->
+                    <line x1="400" y1="590" x2="400" y2="760" stroke="#c0c0c0" stroke-width="25"/>
+                    <line x1="210" y1="400" x2="40" y2="400" stroke="#c0c0c0" stroke-width="25"/>
+                    <line x1="590" y1="400" x2="760" y2="400" stroke="#c0c0c0" stroke-width="25"/>
+                    <circle cx="400" cy="400" r="200" fill="none" stroke="#111" stroke-width="4"/>
+                </svg>`
+        },
+        '80s': {
+            css: {
+                '--bg-color': '#1a0b2e',
+                '--font-main': "'VT323', monospace",
+                '--gauge-bg': '#2b003a',
+                '--gauge-border': '4px solid #00ffff',
+                '--gauge-shadow': '0 0 25px #ff00ff, inset 0 0 20px #ff00ff',
+                '--text-color': '#00ffff',
+                '--text-shadow': '4px 4px 0px #ff00ff',
+                '--unit-color': '#ff00ff',
+                '--needle-bg': '#ff00ff',
+                '--needle-shadow': '0 0 20px #ff00ff, 0 0 40px #ff00ff',
+                '--pivot-bg': '#111',
+                '--pivot-border': '4px solid #ff00ff',
+                '--pivot-shadow': '0 0 15px #00ffff',
+                '--gear-color': 'rgba(0, 255, 255, 0.15)'
+            },
+            road: { sky: '#1a0b2e', grass: '#110022', road: '#2b003a', stripe: '#ff00ff', edge: '#00ffff', gridSky: true },
+            drawTick: (speedPct, isMajor) => ({ color: isMajor ? '#00ffff' : '#ff00ff', opacity: 1 }),
+            updateUI: () => {
+                 const pulse = Math.sin(Date.now() / 200) * 10;
+                 document.body.style.setProperty('--gauge-shadow', `0 0 ${25 + pulse}px #ff00ff, inset 0 0 20px #ff00ff`);
+            },
+            wheelSvg: `
+                <svg viewBox="0 0 800 800" style="width:100%; height:100%;">
+                    <circle cx="400" cy="400" r="380" fill="none" stroke="#111" stroke-width="60"/>
+                    <circle cx="400" cy="400" r="380" fill="none" stroke="#ff00ff" stroke-width="8"/>
+                    <!-- Spoke with gauge cutout hole -->
+                    <path d="M 40 350 L 760 350 L 760 450 L 40 450 Z M 400 215 A 185 185 0 1 0 400 585 A 185 185 0 1 0 400 215 Z" fill="#111" fill-rule="evenodd" stroke="#00ffff" stroke-width="4"/>
+                    <path d="M 350 585 L 450 585 L 450 750 L 350 750 Z" fill="#111" stroke="#00ffff" stroke-width="4"/>
+                    <rect x="100" y="385" width="50" height="30" fill="#ff0055"/>
+                    <rect x="650" y="385" width="50" height="30" fill="#ff0055"/>
+                </svg>`
+        },
+        '00s': {
+            css: {
+                '--bg-color': '#0a0a0a',
+                '--font-main': "'Teko', sans-serif",
+                '--gauge-bg': 'repeating-linear-gradient(45deg, #111, #111 5px, #1a1a1a 5px, #1a1a1a 10px)',
+                '--gauge-border': '4px solid #c0c0c0',
+                '--gauge-shadow': '0 0 20px rgba(0,255,0,0.2), inset 0 0 30px rgba(0,0,0,0.8)',
+                '--text-color': '#ffffff',
+                '--text-shadow': '0 0 10px #0055ff, 0 0 20px #0055ff',
+                '--unit-color': '#aaa',
+                '--needle-bg': '#39ff14', 
+                '--needle-shadow': '0 0 15px #39ff14',
+                '--pivot-bg': '#222',
+                '--pivot-border': '3px solid #c0c0c0',
+                '--pivot-shadow': 'inset 0 0 10px #000, 0 0 10px #000',
+                '--gear-color': 'rgba(255, 255, 255, 0.1)'
+            },
+            road: { sky: '#050505', grass: '#0a0a0a', road: '#151515', stripe: '#ffcc00', edge: '#fff', blurLights: true },
+            drawTick: (speedPct, isMajor) => ({ color: speedPct > 0.8 ? '#ff5500' : '#ffffff', opacity: isMajor ? 1 : 0.5 }),
+            updateUI: () => {},
+            wheelSvg: `
+                <svg viewBox="0 0 800 800" style="width:100%; height:100%;">
+                    <circle cx="400" cy="400" r="380" fill="none" stroke="#222" stroke-width="60" filter="drop-shadow(0 10px 10px rgba(0,0,0,0.8))"/>
+                    <circle cx="400" cy="400" r="350" fill="none" stroke="#39ff14" stroke-width="4"/>
+                    <line x1="400" y1="580" x2="400" y2="760" stroke="#222" stroke-width="120"/>
+                    <line x1="210" y1="400" x2="40" y2="400" stroke="#222" stroke-width="100"/>
+                    <line x1="590" y1="400" x2="760" y2="400" stroke="#222" stroke-width="100"/>
+                    <!-- NOS buttons on wheel -->
+                    <rect x="150" y="380" width="20" height="40" fill="#ff0000" rx="5"/>
+                    <rect x="630" y="380" width="20" height="40" fill="#ff0000" rx="5"/>
+                    <circle cx="400" cy="400" r="190" fill="none" stroke="#c0c0c0" stroke-width="15"/>
+                    <circle cx="400" cy="400" r="182" fill="none" stroke="#111" stroke-width="4"/>
+                </svg>`
+        },
+        'digital': {
+            css: {
+                '--bg-color': '#09090b',
+                '--font-main': "'Rajdhani', sans-serif",
+                '--gauge-bg': '#18181b',
+                '--gauge-border': '2px solid #27272a',
+                '--gauge-shadow': 'none',
+                '--text-color': '#f8fafc',
+                '--text-shadow': 'none',
+                '--unit-color': '#64748b',
+                '--needle-bg': '#38bdf8',
+                '--needle-shadow': '0 0 15px rgba(56, 189, 248, 0.4)',
+                '--pivot-bg': '#38bdf8',
+                '--pivot-border': '4px solid #18181b',
+                '--pivot-shadow': 'none',
+                '--gear-color': '#38bdf8'
+            },
+            road: { sky: '#000', grass: '#050505', road: '#09090b', stripe: '#38bdf8', edge: '#1e293b' },
+            drawTick: (speedPct, isMajor) => ({ color: isMajor ? '#f8fafc' : '#3f3f46', opacity: isMajor ? 1 : 0.5 }),
+            updateUI: (speedPct) => {
+                const colorStr = speedPct > 0.85 ? '#ef4444' : '#38bdf8';
+                document.body.style.setProperty('--needle-bg', colorStr);
+                document.body.style.setProperty('--needle-shadow', `0 0 15px ${colorStr}`);
+                document.body.style.setProperty('--pivot-bg', colorStr);
+                document.body.style.setProperty('--gear-color', colorStr);
+            },
+            wheelSvg: `
+                <svg viewBox="0 0 800 800" style="width:100%; height:100%;">
+                    <!-- Modern Yoke framing the gauge -->
+                    <path d="M 120 400 C 120 650, 250 750, 400 750 C 550 750, 680 650, 680 400 L 580 400 C 580 550, 500 600, 400 600 C 300 600, 220 550, 220 400 Z" fill="#18181b" stroke="#3f3f46" stroke-width="4" filter="drop-shadow(0 10px 15px rgba(0,0,0,0.8))"/>
+                    <path d="M 120 400 L 120 300 C 120 280, 140 260, 160 260 L 220 260 L 220 400 Z" fill="#18181b" stroke="#3f3f46" stroke-width="4"/>
+                    <path d="M 680 400 L 680 300 C 680 280, 660 260, 640 260 L 580 260 L 580 400 Z" fill="#18181b" stroke="#3f3f46" stroke-width="4"/>
+                    <!-- Inner ring -->
+                    <circle cx="400" cy="400" r="185" fill="none" stroke="#38bdf8" stroke-width="3"/>
+                    <circle cx="170" cy="320" r="15" fill="#ef4444"/>
+                    <circle cx="630" cy="320" r="15" fill="#38bdf8"/>
+                </svg>`
+        }
+    };
+
+    let currentTheme = 'neon';
+
+    function setTheme(themeName) {
+        currentTheme = themeName;
+        const config = themes[themeName];
+        
+        for (const [key, value] of Object.entries(config.css)) {
+            document.body.style.setProperty(key, value);
+        }
+
+        document.querySelectorAll('[id^="theme-"]').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`theme-${themeName}`).classList.add('active');
+
+        const rpmBar = document.getElementById('rpm-bar');
+        const rpmBg = document.getElementById('rpm-bg');
+        if(themeName === 'vintage') {
+            rpmBar.style.display = 'none'; rpmBg.style.display = 'none';
+        } else {
+            rpmBar.style.display = 'block'; rpmBg.style.display = 'block';
+        }
+
+        document.getElementById('steering-wheel').innerHTML = config.wheelSvg;
+        drawGauge();
+    }
+
+    // --- Audio System ---
+    let audioCtx, engineOsc, engineFilter, engineGain, windNoise, windFilter, windGain, turboOsc, turboGain, bovBuffer;
+    let isAudioInitialized = false;
+
+    function initAudio() {
+        if (isAudioInitialized) return;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        audioCtx = new AudioContext();
+
+        engineOsc = audioCtx.createOscillator();
+        const engineOsc2 = audioCtx.createOscillator();
+        engineFilter = audioCtx.createBiquadFilter();
+        engineFilter.type = 'lowpass';
+        engineGain = audioCtx.createGain();
+        engineGain.gain.value = 0;
+
+        engineOsc.connect(engineFilter);
+        engineOsc2.connect(engineFilter);
+        engineFilter.connect(engineGain);
+        engineGain.connect(audioCtx.destination);
+        engineOsc.start();
+        engineOsc2.start();
+        engineOsc.osc2 = engineOsc2;
+
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        windNoise = audioCtx.createBufferSource();
+        windNoise.buffer = buffer;
+        windNoise.loop = true;
+        windFilter = audioCtx.createBiquadFilter();
+        windFilter.type = 'lowpass';
+        windGain = audioCtx.createGain();
+        windGain.gain.value = 0;
+        windNoise.connect(windFilter);
+        windFilter.connect(windGain);
+        windGain.connect(audioCtx.destination);
+        windNoise.start();
+
+        turboOsc = audioCtx.createOscillator();
+        turboOsc.type = 'sine';
+        turboGain = audioCtx.createGain();
+        turboGain.gain.value = 0;
+        turboOsc.connect(turboGain);
+        turboGain.connect(audioCtx.destination);
+        turboOsc.start();
+
+        const bovSize = audioCtx.sampleRate * 0.4;
+        bovBuffer = audioCtx.createBuffer(1, bovSize, audioCtx.sampleRate);
+        const bovData = bovBuffer.getChannelData(0);
+        for (let i = 0; i < bovSize; i++) bovData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.05));
+
+        isAudioInitialized = true;
+    }
+
+    function playBOV() {
+        if (!isAudioInitialized || !audioCtx) return;
+        const source = audioCtx.createBufferSource();
+        source.buffer = bovBuffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 3000;
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        source.start();
+    }
+
+    function updateAudio(rpm, speed, throttle) {
+        if (!isAudioInitialized || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        const engineConfig = engineProfiles[currentEngine];
+        
+        engineOsc.type = engineConfig.osc1;
+        engineOsc.osc2.type = engineConfig.osc2;
+
+        const minHz = 35 * engineConfig.basePitch;
+        const maxHz = 180 * engineConfig.basePitch;
+        const rpmRatio = rpm / REDLINE_RPM;
+        const freq = minHz + (rpmRatio * (maxHz - minHz));
+        
+        engineOsc.frequency.setTargetAtTime(freq, now, 0.05);
+        engineOsc.osc2.frequency.setTargetAtTime(freq / 2, now, 0.05);
+        engineFilter.frequency.setTargetAtTime(200 + (rpmRatio * 2000) + (throttle * 1000), now, 0.1);
+        engineGain.gain.setTargetAtTime(0.05 + (throttle * 0.15) + (rpmRatio * 0.1), now, 0.1);
+
+        const speedRatio = speed / MAX_SPEED;
+        windFilter.frequency.setTargetAtTime(100 + (speedRatio * 800), now, 0.1);
+        windGain.gain.setTargetAtTime(speedRatio * 0.3, now, 0.5);
+
+        const targetTurboVol = (turboSpool * 0.2) + (isTurbo && rpm > 2000 ? 0.02 : 0);
+        turboGain.gain.setTargetAtTime(targetTurboVol, now, 0.1);
+        turboOsc.frequency.setTargetAtTime(2000 + (turboSpool * 8000) + (rpmRatio * 2000), now, 0.1);
+    }
+
+    // --- Physics ---
+    const MAX_SPEED = 320, IDLE_RPM = 1000, REDLINE_RPM = 8000;
+    const gears = [
+        { maxSpeed: 60, accelRate: 150 }, { maxSpeed: 110, accelRate: 100 },
+        { maxSpeed: 170, accelRate: 70 }, { maxSpeed: 230, accelRate: 45 },
+        { maxSpeed: 285, accelRate: 25 }, { maxSpeed: 350, accelRate: 10 }
+    ];
+    const engineProfiles = {
+        'I3': { powerMultiplier: 0.7, basePitch: 1.6, osc1: 'sawtooth', osc2: 'sawtooth' },
+        'I4': { powerMultiplier: 1.0, basePitch: 1.0, osc1: 'sawtooth', osc2: 'square' },
+        'V6': { powerMultiplier: 1.4, basePitch: 1.2, osc1: 'sawtooth', osc2: 'triangle' },
+        'V8': { powerMultiplier: 2.1, basePitch: 0.7, osc1: 'square', osc2: 'sawtooth' }
+    };
+    
+    let currentEngine = 'I4', isTurbo = false, turboSpool = 0;
+    let currentGear = 0, currentSpeed = 0, rpm = IDLE_RPM;
+    let isAccelerating = false, hasInteracted = false, isShifting = false, shiftTimer = 0;
+    
+    // Steering State
+    let targetSteer = 0; // -1 (left) to 1 (right)
+    let currentSteer = 0;
+    let roadDistance = 0;
+
+    function setEngine(type) {
+        currentEngine = type;
+        document.querySelectorAll('.btn-engine').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${type.toLowerCase()}`).classList.add('active');
+        rpm = Math.min(REDLINE_RPM, rpm + 500); 
+    }
+
+    function toggleTurbo() {
+        isTurbo = !isTurbo;
+        const btn = document.getElementById('btn-turbo');
+        btn.classList.toggle('active', isTurbo);
+        btn.textContent = `TURBO: ${isTurbo ? 'ON' : 'OFF'}`;
+        if (!isTurbo) turboSpool = 0;
+    }
+
+    const gaugeSvg = document.getElementById('gauge-svg');
+    function drawGauge() {
+        const cx = 175, cy = 175, radius = 150;
+        let svgContent = '';
+        const config = themes[currentTheme];
+
+        for (let speed = 0; speed <= MAX_SPEED; speed += 10) {
+            const percentage = speed / MAX_SPEED;
+            const angleRad = ((-135 + percentage * 270) - 90) * (Math.PI / 180);
+            const isMajor = speed % 40 === 0;
+            const tickLength = isMajor ? 18 : 8;
+            
+            const x1 = cx + (radius - tickLength) * Math.cos(angleRad);
+            const y1 = cy + (radius - tickLength) * Math.sin(angleRad);
+            const x2 = cx + radius * Math.cos(angleRad);
+            const y2 = cy + radius * Math.sin(angleRad);
+            const style = config.drawTick(percentage, isMajor);
+
+            svgContent += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${style.color}" stroke-width="${isMajor ? 3 : 1.5}" stroke-linecap="round" opacity="${style.opacity}" />`;
+
+            if (isMajor) {
+                const tx = cx + (radius - 35) * Math.cos(angleRad);
+                const ty = cy + (radius - 35) * Math.sin(angleRad) + 5;
+                svgContent += `<text x="${tx}" y="${ty}" fill="${style.color}" font-size="16" font-weight="bold" text-anchor="middle" opacity="0.9" style="font-family: ${config.css['--font-main']}">${speed}</text>`;
+            }
+        }
+        gaugeSvg.innerHTML = svgContent;
+    }
+
+    // --- Highway 3D Engine ---
+    const canvas = document.getElementById('warp-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    function drawHighway(dt, speedPct) {
+        const theme = themes[currentTheme].road;
+        roadDistance += (currentSpeed / 40) * dt; 
+        let stripeOffset = roadDistance % 1;
+
+        ctx.fillStyle = theme.sky;
+        ctx.fillRect(0, 0, width, height);
+
+        const horizonY = height * 0.45;
+
+        if (theme.gridSky) {
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<width; i+=40) { ctx.moveTo(i, 0); ctx.lineTo(i, horizonY); }
+            for(let i=0; i<horizonY; i+=20) { ctx.moveTo(0, i); ctx.lineTo(width, i); }
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(width/2, horizonY, 80, Math.PI, 0);
+            const sunGrad = ctx.createLinearGradient(0, horizonY - 80, 0, horizonY);
+            sunGrad.addColorStop(0, '#ffaa00'); sunGrad.addColorStop(1, '#ff0055');
+            ctx.fillStyle = sunGrad; ctx.fill();
+        }
+
+        ctx.fillStyle = theme.grass;
+        ctx.fillRect(0, horizonY, width, height - horizonY);
+
+        const roadWidthBottom = width * 1.2;
+        const roadWidthHorizon = width * 0.05;
+        const curve = -currentSteer * width * 1.5;
+
+        ctx.beginPath();
+        ctx.moveTo(width/2 - roadWidthHorizon + curve*0.1, horizonY);
+        ctx.lineTo(width/2 + roadWidthHorizon + curve*0.1, horizonY);
+        ctx.lineTo(width/2 + roadWidthBottom + curve, height);
+        ctx.lineTo(width/2 - roadWidthBottom + curve, height);
+        ctx.fillStyle = theme.road;
+        ctx.fill();
+
+        const segments = 25;
+        for(let i=0; i<segments; i++) {
+            let z1 = i + 1 - stripeOffset;
+            let z2 = z1 + 0.5;
+
+            if(z1 < 0.1) continue;
+
+            let y1 = horizonY + (height - horizonY) / z1;
+            let y2 = horizonY + (height - horizonY) / z2;
+            let w1 = roadWidthHorizon + (roadWidthBottom - roadWidthHorizon) / z1;
+            let w2 = roadWidthHorizon + (roadWidthBottom - roadWidthHorizon) / z2;
+            let c1 = curve / z1;
+            let c2 = curve / z2;
+
+            if (y1 > height && y2 > height) continue;
+
+            if (theme.stripe !== 'rgba(0,0,0,0)') {
+                ctx.beginPath();
+                ctx.moveTo(width/2 + c1, y1);
+                ctx.lineTo(width/2 + c2, y2);
+                ctx.lineWidth = Math.max(1, 15 / z1);
+                ctx.strokeStyle = theme.stripe;
+                ctx.stroke();
+            }
+
+            if (theme.edge) {
+                ctx.beginPath();
+                ctx.moveTo(width/2 - w1 + c1, y1);
+                ctx.lineTo(width/2 - w2 + c2, y2);
+                ctx.moveTo(width/2 + w1 + c1, y1);
+                ctx.lineTo(width/2 + w2 + c2, y2);
+                ctx.lineWidth = Math.max(1, 20 / z1);
+                ctx.strokeStyle = theme.edge;
+                ctx.stroke();
+            }
+
+            if (theme.poles && i % 2 === 0) {
+                ctx.beginPath();
+                ctx.moveTo(width/2 - w1 + c1, y1);
+                ctx.lineTo(width/2 - w1 + c1, y1 - 100 / z1);
+                ctx.moveTo(width/2 + w1 + c1, y1);
+                ctx.lineTo(width/2 + w1 + c1, y1 - 100 / z1);
+                ctx.lineWidth = Math.max(1, 8 / z1);
+                ctx.strokeStyle = theme.poles;
+                ctx.stroke();
+            }
+            
+            if (theme.blurLights && i % 3 === 0) {
+                ctx.beginPath();
+                let lightHeight = y1 - 150 / z1;
+                ctx.moveTo(width/2 - w1 + c1 - 20/z1, lightHeight);
+                ctx.lineTo(width/2 - w1 + c1 + 20/z1, lightHeight);
+                ctx.moveTo(width/2 + w1 + c1 - 20/z1, lightHeight);
+                ctx.lineTo(width/2 + w1 + c1 + 20/z1, lightHeight);
+                ctx.lineWidth = Math.max(1, 10 / z1);
+                ctx.strokeStyle = i % 2 === 0 ? 'rgba(255, 100, 0, 0.8)' : 'rgba(0, 255, 255, 0.8)';
+                ctx.stroke();
+            }
+        }
+    }
+
+    // --- Main Game Loop ---
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+        const dt = (timestamp - lastTime) / 1000 || 0;
+        lastTime = timestamp;
+
+        // Smooth steering input
+        currentSteer += (targetSteer - currentSteer) * 5 * dt;
+
+        const throttle = isAccelerating ? 1 : 0;
+        const currentGearData = gears[currentGear];
+        const engineConfig = engineProfiles[currentEngine];
+        
+        if (isTurbo && isAccelerating && rpm > 3500) {
+            turboSpool = Math.min(1, turboSpool + 1.5 * dt);
+        } else {
+            turboSpool = Math.max(0, turboSpool - 4.0 * dt);
+        }
+        
+        if (isShifting) {
+            shiftTimer -= dt;
+            if (shiftTimer <= 0) isShifting = false;
+            currentSpeed -= 15 * dt;
+            rpm -= (rpm - Math.max(IDLE_RPM, (currentSpeed / currentGearData.maxSpeed) * REDLINE_RPM)) * 10 * dt; 
+        } else {
+            if (isAccelerating) {
+                let power = currentGearData.accelRate * engineConfig.powerMultiplier;
+                if (isTurbo) power *= (1 + (turboSpool * 1.2));
+                currentSpeed += (power - Math.pow(currentSpeed / MAX_SPEED, 2) * 80) * dt;
+            } else {
+                currentSpeed -= ((15 + (currentGear === 0 ? 20 : 0)) + Math.pow(currentSpeed / MAX_SPEED, 2) * 150) * dt;
+            }
+
+            rpm += (Math.max(IDLE_RPM, (currentSpeed / currentGearData.maxSpeed) * REDLINE_RPM) - rpm) * (isAccelerating ? 15 : 8) * dt;
+
+            if (rpm >= REDLINE_RPM - 200 && currentGear < gears.length - 1 && isAccelerating) {
+                isShifting = true; shiftTimer = 0.25; currentGear++;
+            }
+            if (rpm < 3000 && currentGear > 0 && currentSpeed < gears[currentGear - 1].maxSpeed - 10) {
+                currentGear--; rpm += 1000;
+            }
+        }
+
+        currentSpeed = Math.max(0, Math.min(currentSpeed, MAX_SPEED));
+        rpm = Math.max(IDLE_RPM, Math.min(rpm, REDLINE_RPM + 500));
+
+        const speedPct = currentSpeed / MAX_SPEED;
+        const rpmRatio = (rpm - IDLE_RPM) / (REDLINE_RPM - IDLE_RPM);
+        
+        if (isAudioInitialized) updateAudio(rpm, currentSpeed, isShifting ? 0 : throttle);
+
+        // UI Updates
+        document.getElementById('speed-value').textContent = Math.floor(currentSpeed);
+        document.getElementById('gear-display').textContent = currentGear + 1;
+        themes[currentTheme].updateUI(speedPct);
+
+        document.getElementById('digital-container').style.setProperty('--speed-scale', 1 + (speedPct * 1.2));
+        document.getElementById('needle').style.transform = `rotate(${-135 + (speedPct * 270)}deg)`;
+        
+        // Steering visual update: Wheel rotates around the fixed gauge
+        document.getElementById('steering-wheel').style.transform = `rotate(${currentSteer * 60}deg)`;
+
+        if (currentTheme !== 'vintage') {
+            const rpmBar = document.getElementById('rpm-bar');
+            rpmBar.style.strokeDashoffset = 816.8 - (Math.min(1, Math.max(0, rpmRatio)) * 612.6);
+            if (rpm > REDLINE_RPM - 500) {
+                const flash = (Math.floor(timestamp / 50) % 2 === 0);
+                rpmBar.style.stroke = flash ? '#ffffff' : '#ff0055';
+                if(currentTheme === '00s') rpmBar.style.stroke = flash ? '#ff0000' : '#ff5500';
+                if(currentTheme === 'digital') rpmBar.style.stroke = flash ? '#f8fafc' : '#ef4444';
+            } else {
+                rpmBar.style.stroke = currentTheme === '80s' ? '#ff00ff' : (currentTheme === '00s' ? '#39ff14' : (currentTheme === 'digital' ? '#38bdf8' : '#00ffff'));
+            }
+        }
+
+        const appContainer = document.getElementById('app-container');
+        if (speedPct > 0.85) {
+            if (!appContainer.classList.contains('shake')) appContainer.classList.add('shake');
+            appContainer.style.animationDuration = `${0.3 - (speedPct - 0.85)}s`;
+        } else {
+            appContainer.classList.remove('shake');
+        }
+
+        drawHighway(dt, speedPct);
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- Inputs ---
+    function triggerAccelerate(e) {
+        if (e && e.type !== 'keydown') e.preventDefault();
+        if (e && e.type === 'keydown' && e.repeat) return;
+        if (e && e.type === 'keydown' && !['Space', 'ArrowUp', 'KeyW'].includes(e.code)) return;
+        if (e && e.target.tagName && e.target.tagName.toLowerCase() === 'button') return;
+
+        isAccelerating = true;
+        if (!hasInteracted) {
+            hasInteracted = true;
+            initAudio();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('instructions').style.opacity = "0";
+            document.getElementById('instructions').style.transition = "opacity 1s";
+        }
+    }
+
+    function triggerDecelerate(e) {
+        if (e && e.type !== 'keyup') e.preventDefault();
+        if (e && e.type === 'keyup' && !['Space', 'ArrowUp', 'KeyW'].includes(e.code)) return;
+        if (isAccelerating && isTurbo && turboSpool > 0.3) playBOV();
+        isAccelerating = false;
+        if(e && e.type.includes('pointer')) targetSteer = 0;
+    }
+
+    function handleSteering(e) {
+        if (!isAccelerating && e.type.includes('pointer')) return;
+        if (e.type === 'pointermove') {
+            targetSteer = (e.clientX / window.innerWidth) * 2 - 1; 
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (['ArrowLeft', 'KeyA'].includes(e.code)) targetSteer = -1;
+        if (['ArrowRight', 'KeyD'].includes(e.code)) targetSteer = 1;
+        triggerAccelerate(e);
+    });
+    
+    window.addEventListener('keyup', (e) => {
+        if (['ArrowLeft', 'KeyA'].includes(e.code) && targetSteer === -1) targetSteer = 0;
+        if (['ArrowRight', 'KeyD'].includes(e.code) && targetSteer === 1) targetSteer = 0;
+        triggerDecelerate(e);
+    });
+
+    document.body.addEventListener('pointerdown', (e) => { triggerAccelerate(e); handleSteering(e); });
+    document.body.addEventListener('pointermove', handleSteering);
+    document.body.addEventListener('pointerup', triggerDecelerate);
+    document.body.addEventListener('pointercancel', triggerDecelerate);
+    document.body.addEventListener('pointerleave', triggerDecelerate);
+    document.body.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Initialize
+    setTheme('neon');
+    requestAnimationFrame(gameLoop);
+
+</script>
+</body>
+</html>
