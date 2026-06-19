@@ -15,7 +15,7 @@
         body {
             background-color: #362419; /* Deep brown */
             color: #00ff00; /* Green text */
-            font-family: 'PressStart2P', cursive;
+            font-family: 'PressStart2P', monospace;
             cursor: url('cursor.cur'), auto;
             overflow-x: hidden;
             margin: 0;
@@ -56,7 +56,7 @@
             font-size: 0.875rem;
             line-height: 1.6;
             max-width: 600px;
-            margin: 0 auto 4rem auto;
+            margin: 0 auto 2rem auto;
             text-align: center;
         }
 
@@ -70,12 +70,63 @@
             50% { border-color: #00ff00; }
         }
 
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+
+        /* --- Quote of the Day Styles --- */
+        .quote-content {
+            font-size: 0.8rem;
+        }
+        .quote-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        .quote-content td {
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        /* --- Widgets Container --- */
+        .top-widgets {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 4rem;
+            flex-wrap: wrap;
+        }
+
+        .widget-box {
+            background: #2a1c13;
+            border: 3px solid #00ff00;
+            padding: 1rem 1.5rem;
+            box-shadow: 6px 6px 0px #00ff00;
+            font-size: 0.875rem;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        /* --- Section Titles --- */
+        .section-title {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            text-align: left;
+            border-bottom: 2px dashed #00ff00;
+            padding-bottom: 0.5rem;
+        }
+
         /* --- Masonry Layout --- */
         .masonry {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             text-align: left;
+            margin-bottom: 4rem;
         }
 
         .masonry-item {
@@ -85,6 +136,8 @@
             box-shadow: 6px 6px 0px #00ff00;
             break-inside: avoid;
             margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
         }
 
         .masonry-item h3 {
@@ -98,9 +151,10 @@
             font-size: 0.875rem;
             line-height: 1.5;
             margin-bottom: 1.25rem;
+            flex-grow: 1;
         }
 
-        .masonry-item a {
+        .masonry-item .btn {
             display: inline-block;
             background-color: #00ff00;
             color: #362419;
@@ -109,13 +163,97 @@
             font-size: 0.875rem;
             transition: all 0.2s ease;
             box-shadow: 3px 3px 0px #1a110c;
+            text-align: center;
+            margin-top: auto;
         }
 
-        .masonry-item a:hover {
+        .masonry-item .btn:hover {
             transform: translate(2px, 2px);
             box-shadow: 1px 1px 0px #1a110c;
+            background-color: #fff;
+        }
+
+        /* --- Wiktionary Content Overrides (Retro Mode) --- */
+        .wiktionary-card {
+            grid-column: span 1;
+        }
+        @media (min-width: 768px) {
+            .wiktionary-masonry {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         
+        .wiktionary-header {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 0.5rem;
+        }
+
+        .wiktionary-content {
+            font-size: 0.75rem;
+            line-height: 1.8;
+            word-wrap: break-word;
+            overflow-x: hidden;
+        }
+
+        .wiktionary-content b, .wiktionary-content strong {
+            color: #ffffff;
+            font-size: 0.9rem;
+            display: block;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .wiktionary-content a {
+            color: #ffff00;
+            text-decoration: none;
+            border-bottom: 1px dashed #ffff00;
+        }
+
+        .wiktionary-content a:hover {
+            background-color: #00ff00;
+            color: #362419;
+            border-bottom: none;
+        }
+
+        .wiktionary-content ol, .wiktionary-content ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .wiktionary-content li {
+            margin-bottom: 0.75rem;
+        }
+
+        .wiktionary-content table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            background: transparent !important;
+            border: 2px solid #00ff00 !important;
+            margin: 1rem 0;
+        }
+
+        .wiktionary-content td, .wiktionary-content th {
+            border: 1px solid #00ff00 !important;
+            background: transparent !important;
+            padding: 0.5rem !important;
+        }
+
+        .wiktionary-content img {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #00ff00;
+            image-rendering: pixelated;
+            margin: 1rem 0;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
         /* --- Footer Styles --- */
         footer {
             border-top: 4px solid #00ff00;
@@ -160,8 +298,38 @@
             Welcome to my collection of digital creations. Each tool below is a small project that I made to help with a specific problem I had but nobody else solved. Feel free to explore and use them.
         </p>
 
+        <!-- TOP WIDGETS -->
+        <div class="top-widgets">
+            <div class="widget-box" id="clock-widget">
+                > SYS.TIME: <span id="clock-display">00:00:00</span>
+            </div>
+            <div class="widget-box" id="weather-widget">
+                > <span id="weather-display" class="blink">LOADING WEATHER...</span>
+            </div>
+        </div>
+
+        <!-- WIKTIONARY SECTION -->
+        <h2 class="section-title">> Daily Lexicon_</h2>
+        <div class="masonry wiktionary-masonry">
+            <!-- English Word of the Day -->
+            <div class="masonry-item wiktionary-card">
+                <div class="wiktionary-header">EN W.O.T.D.</div>
+                <div id="en-loading" class="blink wiktionary-content">> FETCHING DATA...</div>
+                <div id="en-content" class="wiktionary-content hidden"></div>
+            </div>
+
+            <!-- Foreign Word of the Day -->
+            <div class="masonry-item wiktionary-card">
+                <div class="wiktionary-header">FOREIGN W.O.T.D.</div>
+                <div id="fw-loading" class="blink wiktionary-content">> FETCHING DATA...</div>
+                <div id="fw-content" class="wiktionary-content hidden"></div>
+            </div>
+        </div>
+
+        <!-- PROJECTS SECTION -->
+        <h2 class="section-title">> Projects_</h2>
         <div id="masonry-container" class="masonry">
-            <!-- Project cards will be injected here by JavaScript -->
+            <!-- Project cards injected here by JS -->
         </div>
         
         <footer>
@@ -181,7 +349,9 @@
     </div>
 
     <script>
-        // --- Cursor Trails Logic ---
+        /* =========================================
+           CURSOR TRAILS (Fixed for scrolling)
+        ========================================= */
         const trails = [];
         const numTrails = 15;
 
@@ -197,8 +367,11 @@
         }
 
         window.addEventListener('mousemove', (e) => {
-            let x = e.pageX;
-            let y = e.pageY;
+            // FIX: Using clientX and clientY instead of pageX and pageY.
+            // Since the trail element is position: fixed, tracking it relative
+            // to the viewport ensures it doesn't break when scrolling down.
+            let x = e.clientX;
+            let y = e.clientY;
 
             trails.forEach((trail, index, arr) => {
                 const nextTrail = arr[index + 1] || arr[0];
@@ -217,61 +390,257 @@
             });
         });
 
-        // --- Masonry Project Data ---
-        const projects = [
-            {
-                title: "Bookmark Manager",
-                description: "A bookmark manager for when your browser isn't enough. All stored locally",
-                link: "bookmarks.html"
-            },
-            {
-                title: "(Und)ictionary",
-                description: "A multilingual dictionary powered by Wiktionary and Wikimedia. Some AI included.",
-                link: "dictionary.html"
-            },
-            {
-                title: "DOS Writer",
-                description: "Write MD like a hacker.",
-                link: "doswriter.html"
-            },
-            {
-                title: "Presentation Helper",
-                description: "Upload images and audio, then present them. Useful for online meetings.",
-                link: "PresentationStudio.html"
-            },
-            {
-                title: "Ollama Search",
-                description: "Search the web with your Ollama. Uses DuckDuckGo and send the results to your local Ollama. A more advanced version can be found in the OllamaSearch-py repo on my GitHub.",
-                link: "OllamaSearch.html"
-            },
-            {
-                title: "ShiversAI",
-                description: "Talk to AI that's a little to connected to the fabric of reality.",
-                link: "shivers.html"
-            },
-            {
-                title: "My GitHub",
-                description: "Maybe you just came from there, but I have more cool things on my GitHub.",
-                link: "https://github.com/gyyyn"
+        /* =========================================
+           CLOCK WIDGET
+        ========================================= */
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+            document.getElementById('clock-display').textContent = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        /* =========================================
+           WEATHER WIDGET (Open-Meteo API)
+        ========================================= */
+        async function fetchWeather(lat, lon) {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                if (!res.ok) throw new Error("Network response was not ok");
+                const data = await res.json();
+                const temp = Math.round(data.current_weather.temperature);
+                const code = data.current_weather.weathercode;
+                
+                // Decode WMO Weather interpretation codes
+                let desc = 'UNKNOWN';
+                if (code === 0) desc = 'CLEAR';
+                else if (code >= 1 && code <= 3) desc = 'CLOUDY';
+                else if (code >= 45 && code <= 48) desc = 'FOG';
+                else if (code >= 51 && code <= 67) desc = 'RAIN';
+                else if (code >= 71 && code <= 77) desc = 'SNOW';
+                else if (code >= 80 && code <= 82) desc = 'SHOWERS';
+                else if (code >= 95 && code <= 99) desc = 'STORM';
+
+                const weatherDisplay = document.getElementById('weather-display');
+                weatherDisplay.classList.remove('blink');
+                weatherDisplay.textContent = `WEATHER: ${desc} ${temp}°C`;
+            } catch (err) {
+                const weatherDisplay = document.getElementById('weather-display');
+                weatherDisplay.classList.remove('blink');
+                weatherDisplay.textContent = `WEATHER: ERR OFFLINE`;
             }
+        }
+
+        // Initialize geolocation or default to a generic location if denied/unavailable
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => fetchWeather(position.coords.latitude, position.coords.longitude),
+                (error) => fetchWeather(-22.9056, -47.0608) // Default fallback
+            );
+        } else {
+            fetchWeather(-22.9056, -47.0608);
+        }
+
+        /* =========================================
+           WIKTIONARY DAILY LEXICON
+        ========================================= */
+        function cleanWiktionaryHTML(rawHtml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(rawHtml, 'text/html');
+
+            // Fix links
+            doc.querySelectorAll('a').forEach(a => {
+                const href = a.getAttribute('href');
+                if (href && href.startsWith('/')) {
+                    a.setAttribute('href', 'https://en.wiktionary.org' + href);
+                }
+                a.setAttribute('target', '_blank');
+                a.setAttribute('rel', 'noopener noreferrer');
+            });
+
+            // Fix media
+            doc.querySelectorAll('source, img').forEach(el => {
+                const src = el.getAttribute('src');
+                if (src && src.startsWith('//')) {
+                    el.setAttribute('src', 'https:' + src);
+                }
+            });
+
+            // Strip inline styles and unwanted attributes to force retro theme
+            doc.querySelectorAll('*').forEach(el => {
+                el.removeAttribute('style');
+                el.removeAttribute('bgcolor');
+                el.removeAttribute('width');
+                el.removeAttribute('height');
+                el.removeAttribute('class');
+            });
+
+            // Remove unwanted sections entirely
+            const unwantedSelectors = [
+                'style', 'link', 'script', 'meta', '.noprint', '.metadata', 
+                '.mw-editsection', '.navbox', '#toc', '.toc', '.sister-wikipedia', '.mw-empty-elt'
+            ];
+            doc.querySelectorAll(unwantedSelectors.join(',')).forEach(el => el.remove());
+
+            return doc.body.innerHTML;
+        }
+
+        async function fetchWOTD(type, dayOffset = 0) {
+            if (dayOffset > 5) throw new Error("Unable to locate word data for the past 5 days.");
+
+            const targetDate = new Date();
+            targetDate.setUTCDate(targetDate.getUTCDate() - dayOffset);
+            
+            const year = targetDate.getUTCFullYear();
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const month = months[targetDate.getUTCMonth()];
+            const day = targetDate.getUTCDate();
+
+            let pageTitle = type === 'en' 
+                ? `Wiktionary:Word_of_the_day/${year}/${month}_${day}` 
+                : `Wiktionary:Foreign_Word_of_the_Day/${year}/${month}_${day}`;
+
+            const apiUrl = `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&format=json&origin=*&disableeditsection=true&redirects=true`;
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                
+                const data = await response.json();
+
+                if (data.error && data.error.code === 'missingtitle') {
+                    return await fetchWOTD(type, dayOffset + 1);
+                }
+                return data.parse.text["*"];
+            } catch (error) {
+                return await fetchWOTD(type, dayOffset + 1);
+            }
+        }
+
+        async function loadWordContent(type, containerId, loadingId) {
+            const containerEl = document.getElementById(containerId);
+            const loadingEl = document.getElementById(loadingId);
+
+            try {
+                const rawHtml = await fetchWOTD(type);
+                const cleanHtml = cleanWiktionaryHTML(rawHtml);
+                
+                containerEl.innerHTML = cleanHtml;
+                loadingEl.classList.add('hidden');
+                containerEl.classList.remove('hidden');
+            } catch (error) {
+                loadingEl.classList.remove('blink');
+                loadingEl.innerHTML = '> ERROR: CONNECTION LOST.';
+            }
+        }
+
+        // Initialize Lexicon
+        loadWordContent('en', 'en-content', 'en-loading');
+        loadWordContent('fw', 'fw-content', 'fw-loading');
+
+        /* =========================================
+           WIKIQUOTE OF THE DAY (Returning Visitors)
+        ========================================= */
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = `; expires=${date.toUTCString()}`;
+            }
+            document.cookie = `${name}=${value || ""}${expires}; path=/`;
+        }
+
+        async function initWelcomeMessage() {
+            const introEl = document.querySelector('.intro-paragraph');
+            const headerEl = document.querySelector('.intro-text');
+            const hasVisited = getCookie('gyyyn_visited');
+
+            if (!hasVisited) {
+                // First visit: Set the cookie, keep default text
+                setCookie('gyyyn_visited', 'true', 365);
+            } else {
+                // Returning visit: Change header and fetch Wikiquote of the Day
+                headerEl.textContent = '> Welcome Back_';
+                introEl.classList.add('quote-content');
+                
+                try {
+                    introEl.innerHTML = '> FETCHING QUOTE OF THE DAY...<span class="blink">_</span>';
+                    
+                    const res = await fetch('https://en.wikiquote.org/w/api.php?action=parse&page=Template:Quote_of_the_day&format=json&origin=*');
+                    if (!res.ok) throw new Error("API Error");
+                    
+                    const data = await res.json();
+                    const rawHtml = data.parse.text["*"];
+                    
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(rawHtml, 'text/html');
+                    
+                    // Clean up Wikiquote HTML to match our 8-bit theme
+                    doc.querySelectorAll('img, script, style, .noprint').forEach(el => el.remove());
+                    doc.querySelectorAll('*').forEach(el => {
+                        el.removeAttribute('style');
+                        el.removeAttribute('class');
+                        el.removeAttribute('width');
+                        el.removeAttribute('height');
+                        el.removeAttribute('bgcolor');
+                    });
+
+                    // Style links retro yellow
+                    doc.querySelectorAll('a').forEach(a => {
+                        const href = a.getAttribute('href');
+                        if (href && href.startsWith('/')) {
+                            a.setAttribute('href', 'https://en.wikiquote.org' + href);
+                        }
+                        a.setAttribute('target', '_blank');
+                        a.setAttribute('style', 'color: #ffff00; text-decoration: none; border-bottom: 1px dashed #ffff00;');
+                    });
+
+                    // Update UI
+                    introEl.innerHTML = doc.body.innerHTML;
+                } catch (e) {
+                    // Fallback to original text if fetch fails
+                    introEl.textContent = "Welcome back to my collection of digital creations. Each tool below is a small project that I made to help with a specific problem I had but nobody else solved. Feel free to explore and use them.";
+                }
+            }
+        }
+
+        initWelcomeMessage();
+
+        /* =========================================
+           MASONRY PROJECT DATA
+        ========================================= */
+        const projects = [
+            { title: "PatternForge", description: "Upload images to make cool patterns. Uses <canvas>.", link: "patterns.html" },
+            { title: "Lexicon", description: "Fetches the current word of the day from Wiktionary. Same as the top of this page.", link: "lexicon.html" },
+            { title: "Bookmark Manager", description: "A bookmark manager for when your browser isn't enough. All stored locally.", link: "bookmarks.html" },
+            { title: "(Und)ictionary", description: "A multilingual dictionary powered by Wiktionary and Wikimedia. Some AI included.", link: "dictionary.html" },
+            { title: "DOS Writer", description: "Write MD like a hacker.", link: "doswriter.html" },
+            { title: "Presentation Helper", description: "Upload images and audio, then present them. Useful for online meetings.", link: "PresentationStudio.html" },
+            { title: "Ollama Search", description: "Search the web with your Ollama. Uses DuckDuckGo and sends results to your local Ollama.", link: "OllamaSearch.html" },
+            { title: "ShiversAI", description: "Talk to AI that's a little too connected to the fabric of reality.", link: "shivers.html" },
+            { title: "My GitHub", description: "Maybe you just came from there, but I have more cool things on my GitHub.", link: "https://github.com/gyyyn" }
         ];
 
-        // --- Inject Projects into Masonry Layout ---
         const masonryContainer = document.getElementById('masonry-container');
-
         projects.forEach(project => {
             const item = document.createElement('div');
             item.className = 'masonry-item';
-
             item.innerHTML = `
                 <h3>${project.title}</h3>
                 <p>${project.description}</p>
-                <a href="${project.link}" target="_blank">Launch Tool ></a>
+                <a href="${project.link}" target="_blank" class="btn">Launch Tool ></a>
             `;
-
             masonryContainer.appendChild(item);
         });
     </script>
-
 </body>
 </html>
