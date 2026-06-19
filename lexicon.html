@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiktionary Daily Lexicon</title>
+    
+    <!-- Google Fonts: Inter for UI, Playfair Display for Dictionary Entries -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base page styling */
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #0f172a;
+                color: #f1f5f9;
+            }
+        }
+
+        /* 
+         * Wiktionary Content Overrides 
+         * Wiktionary HTML is extremely chaotic. These rules force it to look clean, 
+         * removing ugly borders and adapting it to our sleek aesthetic.
+         */
+        .wiktionary-content {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.125rem;
+            line-height: 1.75;
+        }
+
+        /* Enforce link styling */
+        .wiktionary-content a {
+            color: #2563eb;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .wiktionary-content a:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+        @media (prefers-color-scheme: dark) {
+            .wiktionary-content a { color: #60a5fa; }
+            .wiktionary-content a:hover { color: #93c5fd; }
+        }
+
+        /* Normalize Wiktionary Tables */
+        .wiktionary-content table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            background: transparent !important;
+            border: none !important;
+            margin-bottom: 1rem;
+        }
+        .wiktionary-content td, .wiktionary-content th {
+            border: none !important;
+            background: transparent !important;
+            padding: 0.5rem 0 !important;
+            vertical-align: top;
+        }
+
+        /* Target the main word itself */
+        .wiktionary-content b, .wiktionary-content strong {
+            font-size: 1.75rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+            color: #111827;
+        }
+        @media (prefers-color-scheme: dark) {
+            .wiktionary-content b, .wiktionary-content strong { color: #f8fafc; }
+        }
+
+        /* Definitions list styling */
+        .wiktionary-content ol {
+            padding-left: 1.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .wiktionary-content ol li {
+            margin-bottom: 0.75rem;
+            padding-left: 0.5rem;
+        }
+        .wiktionary-content ul {
+            padding-left: 1.5rem;
+            list-style-type: disc;
+            margin-bottom: 1rem;
+        }
+
+        /* Images and Media */
+        .wiktionary-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .wiktionary-content .thumb {
+            float: none !important;
+            margin: 0 0 1.5rem 0 !important;
+        }
+        .wiktionary-content .thumbinner {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+        }
+        .wiktionary-content .thumbcaption {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+        
+        /* Audio buttons */
+        .wiktionary-content audio {
+            margin-top: 0.5rem;
+            height: 36px;
+            border-radius: 999px;
+        }
+
+        /* Hide specific ugly Wiktionary UI elements */
+        .wiktionary-content .navbox,
+        .wiktionary-content .noprint,
+        .wiktionary-content .mw-editsection,
+        .wiktionary-content .metadata,
+        .wiktionary-content .sister-wikipedia {
+            display: none !important;
+        }
+
+        /* Loading Skeleton Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans transition-colors duration-300">
+
+    <header class="w-full bg-white dark:bg-brand-900 shadow-sm py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                </svg>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-brand-900 dark:text-white font-serif">Daily Lexicon</h1>
+            </div>
+            <div class="text-center sm:text-right">
+                <p id="current-date" class="text-sm sm:text-base font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider"></p>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- English Word of the Day Card -->
+            <article class="bg-white dark:bg-brand-800 rounded-2xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700 transition-colors duration-300">
+                <div class="bg-blue-50 dark:bg-slate-700/50 px-6 py-4 border-b border-blue-100 dark:border-slate-700 flex items-center gap-2">
+                    <span class="text-blue-600 dark:text-blue-400 text-xl">🇬🇧</span>
+                    <h2 class="text-lg font-semibold text-blue-900 dark:text-blue-100 uppercase tracking-wide">English Word of the Day</h2>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <!-- Loading State -->
+                    <div id="en-loading" class="w-full">
+                        <div class="skeleton h-8 bg-slate-200 dark:bg-slate-600 rounded w-1/3 mb-4"></div>
+                        <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-1/4 mb-6"></div>
+                        <div class="space-y-3">
+                            <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-full"></div>
+                            <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-5/6"></div>
+                            <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-4/6"></div>
+                        </div>
+                    </div>
+                    <!-- Content Container -->
+                    <div id="en-content" class="wiktionary-content hidden"></div>
+                </div>
+            </article>
+
+            <!-- Foreign Word of the Day Card -->
+            <article class="bg-white dark:bg-brand-800 rounded-2xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700 transition-colors duration-300">
+                <div class="bg-emerald-50 dark:bg-slate-700/50 px-6 py-4 border-b border-emerald-100 dark:border-slate-700 flex items-center gap-2">
+                    <span class="text-emerald-600 dark:text-emerald-400 text-xl">🌍</span>
+                    <h2 class="text-lg font-semibold text-emerald-900 dark:text-emerald-100 uppercase tracking-wide">Foreign Word of the Day</h2>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <!-- Loading State -->
+                    <div id="fw-loading" class="w-full">
+                        <div class="skeleton h-8 bg-slate-200 dark:bg-slate-600 rounded w-1/3 mb-4"></div>
+                        <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-1/4 mb-6"></div>
+                        <div class="space-y-3">
+                            <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-full"></div>
+                            <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-5/6"></div>
+                            <div class="skeleton h-4 bg-slate-200 dark:bg-slate-600 rounded w-4/6"></div>
+                        </div>
+                    </div>
+                    <!-- Content Container -->
+                    <div id="fw-content" class="wiktionary-content hidden"></div>
+                </div>
+            </article>
+
+        </div>
+    </main>
+
+    <footer class="w-full border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-brand-900/50 py-8 mt-auto backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                Content gracefully fetched from <a href="https://en.wiktionary.org" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Wiktionary</a> under CC-BY-SA.<br>
+                Updates dynamically every day.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Set current date in header
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', dateOptions);
+
+            /**
+             * Cleans and formats the raw Wiktionary HTML to make it safe, functional, and beautiful.
+             * @param {string} rawHtml - The raw HTML string from MediaWiki API
+             * @returns {string} - Cleaned HTML
+             */
+            function cleanWiktionaryHTML(rawHtml) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawHtml, 'text/html');
+
+                // 1. Fix relative links to absolute Wiktionary URLs
+                doc.querySelectorAll('a').forEach(a => {
+                    const href = a.getAttribute('href');
+                    if (href && href.startsWith('/')) {
+                        a.setAttribute('href', 'https://en.wiktionary.org' + href);
+                    }
+                    // Open all links in new tab
+                    a.setAttribute('target', '_blank');
+                    a.setAttribute('rel', 'noopener noreferrer');
+                });
+
+                // 2. Fix media/audio sources
+                doc.querySelectorAll('source, img').forEach(el => {
+                    const src = el.getAttribute('src');
+                    if (src && src.startsWith('//')) {
+                        el.setAttribute('src', 'https:' + src);
+                    }
+                });
+
+                // 3. Bruteforce strip all inline styles and background colors to allow our CSS & dark mode to work
+                doc.querySelectorAll('*').forEach(el => {
+                    el.removeAttribute('style');
+                    el.removeAttribute('bgcolor');
+                    el.removeAttribute('width');
+                    el.removeAttribute('height');
+                });
+
+                // 4. Remove intrusive/unnecessary elements completely from DOM
+                const unwantedSelectors = [
+                    'style', 'link', 'script', 'meta', // Safety first
+                    '.noprint', '.metadata', '.mw-editsection', 
+                    '.navbox', '#toc', '.toc', '.sister-wikipedia',
+                    '.mw-empty-elt'
+                ];
+                doc.querySelectorAll(unwantedSelectors.join(',')).forEach(el => el.remove());
+
+                return doc.body.innerHTML;
+            }
+
+            /**
+             * Fetches the word of the day HTML from Wiktionary Parse API.
+             * Includes a recursive fallback: if today's word isn't published yet, it looks at yesterday.
+             * @param {string} type - 'en' for English, 'fw' for Foreign
+             * @param {number} dayOffset - Number of days to go back (default 0)
+             */
+            async function fetchWOTD(type, dayOffset = 0) {
+                // Max fallback limit to prevent infinite loops
+                if (dayOffset > 5) {
+                    throw new Error("Unable to locate word data for the past 5 days.");
+                }
+
+                // Calculate the target date (Wiktionary uses UTC)
+                const targetDate = new Date();
+                targetDate.setUTCDate(targetDate.getUTCDate() - dayOffset);
+                
+                const year = targetDate.getUTCFullYear();
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const month = months[targetDate.getUTCMonth()];
+                const day = targetDate.getUTCDate(); // No leading zeros for day
+
+                // Construct exact MediaWiki Page Titles
+                let pageTitle;
+                if (type === 'en') {
+                    pageTitle = `Wiktionary:Word_of_the_day/${year}/${month}_${day}`;
+                } else {
+                    pageTitle = `Wiktionary:Foreign_Word_of_the_Day/${year}/${month}_${day}`;
+                }
+
+                // Build the Parse API URL with CORS bypass origin=*
+                const apiUrl = `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&format=json&origin=*&disableeditsection=true&redirects=true`;
+
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                    
+                    const data = await response.json();
+
+                    // If page doesn't exist yet (Wiktionary hasn't rolled over), fallback to previous day
+                    if (data.error && data.error.code === 'missingtitle') {
+                        console.log(`[${type}] Word not found for ${month} ${day}, trying previous day...`);
+                        return await fetchWOTD(type, dayOffset + 1);
+                    }
+
+                    // Success! Return the raw HTML snippet
+                    return data.parse.text["*"];
+
+                } catch (error) {
+                    console.error(`Fetch attempt failed for ${type} offset ${dayOffset}:`, error);
+                    // Attempt fallback on generic network error as well
+                    return await fetchWOTD(type, dayOffset + 1);
+                }
+            }
+
+            
+            // Function to handle the full UI flow for a card
+            async function loadWordContent(type, containerId, loadingId) {
+                const containerEl = document.getElementById(containerId);
+                const loadingEl = document.getElementById(loadingId);
+
+                try {
+                    const rawHtml = await fetchWOTD(type);
+                    const cleanHtml = cleanWiktionaryHTML(rawHtml);
+                    
+                    // Update DOM
+                    containerEl.innerHTML = cleanHtml;
+                    
+                    // Swap visibility
+                    loadingEl.classList.add('hidden');
+                    containerEl.classList.remove('hidden');
+
+                } catch (error) {
+                    // Show error state gracefully
+                    loadingEl.classList.add('hidden');
+                    containerEl.innerHTML = `
+                        <div class="text-center py-8">
+                            <span class="text-4xl mb-4 block">📡</span>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Connection Error</h3>
+                            <p class="text-slate-600 dark:text-slate-400 mt-2">We couldn't retrieve the word from Wiktionary at this moment.</p>
+                        </div>
+                    `;
+                    containerEl.classList.remove('hidden');
+                }
+            }
+
+            // Initiate parallel fetching
+            loadWordContent('en', 'en-content', 'en-loading');
+            loadWordContent('fw', 'fw-content', 'fw-loading');
+        });
+    </script>
+</body>
+</html>

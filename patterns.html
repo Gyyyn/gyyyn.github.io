@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Icon Background Generator</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-input: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --border: #334155;
+            --radius: 8px;
+        }
+
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-input); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        .sidebar {
+            width: 380px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .preview-area {
+            flex-grow: 1;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+            background-image: 
+                linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                linear-gradient(135deg, #1e293b 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #1e293b 75%),
+                linear-gradient(135deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 0, 10px -10px, 0px 10px;
+        }
+
+        canvas {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        /* Form Controls */
+        .section {
+            background: rgba(0,0,0,0.2);
+            padding: 16px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .control-group:last-child { margin-bottom: 0; }
+
+        .control-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .val-display { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+        input[type="number"], select, input[type="text"] {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="number"]:focus, select:focus { border-color: var(--accent); }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 36px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            padding: 0;
+            background: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 6px; }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        button:hover { background: var(--border); }
+        
+        button.primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+        }
+        button.primary:hover { background: var(--accent-hover); }
+
+        button.icon-btn {
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+        }
+        button.icon-btn:hover { color: var(--danger); background: rgba(239, 68, 68, 0.1); border-radius: 4px; }
+
+        /* Icon Manager */
+        .icon-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .icon-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-main);
+            padding: 8px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .icon-item img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 2px;
+        }
+        .icon-weight { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; }
+        .icon-weight label { font-size: 0.7rem; color: var(--text-muted); }
+
+        /* Palette Manager */
+        .palette-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .palette-color {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .palette-color input[type="color"] {
+            position: absolute;
+            top: -10px; left: -10px;
+            width: 60px; height: 60px;
+        }
+        .remove-color {
+            position: absolute;
+            top: -4px; right: -4px;
+            background: var(--danger);
+            color: white;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            border: none;
+            padding: 0;
+        }
+        .palette-color:hover .remove-color { opacity: 1; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>PatternForge</h1>
+            <button id="resetBtn" style="font-size: 0.8rem; padding: 4px 8px;">Reset</button>
+        </div>
+        
+        <div class="sidebar-content">
+            
+            <!-- EXPORT SETTINGS -->
+            <div class="section">
+                <div class="section-title">Canvas & Export</div>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>Width</label>
+                        <input type="number" id="canvasW" data-state="width">
+                    </div>
+                    <div class="control-group">
+                        <label>Height</label>
+                        <input type="number" id="canvasH" data-state="height">
+                    </div>
+                </div>
+                <div class="control-group" style="margin-top: 12px;">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="seamless" data-state="seamless">
+                        Seamless Tile Mode (Wraps edges)
+                    </label>
+                </div>
+            </div>
+
+            <!-- ICONS & WEIGHTS -->
+            <div class="section">
+                <div class="section-title">
+                    Icons
+                    <button style="padding: 2px 8px; font-size: 0.75rem;" onclick="document.getElementById('upload').click()">+ Add</button>
+                </div>
+                <input type="file" id="upload" accept=".png, .svg" multiple class="hidden">
+                <div id="iconList" class="icon-list">
+                    <!-- Dynamic Icon Items -->
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 10px;">
+                        No icons uploaded.
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLORS -->
+            <div class="section">
+                <div class="section-title">Colors</div>
+                <div class="control-group">
+                    <label>Background Color</label>
+                    <input type="color" id="bgColor" data-state="bgColor">
+                </div>
+                
+                <div class="control-group" style="margin-top: 12px;">
+                    <label class="checkbox-label" style="margin-bottom: 8px;">
+                        <input type="checkbox" id="tintEnabled" data-state="tintEnabled">
+                        Enable Icon Tinting & Palettes
+                    </label>
+                    
+                    <div id="paletteContainer" style="opacity: 0.5; pointer-events: none;">
+                        <label>Icon Color Palette <button id="addColorBtn" style="padding: 2px 6px; font-size: 0.7rem;">+ Color</button></label>
+                        <div id="paletteList" class="palette-list">
+                            <!-- Dynamic Palette -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LAYOUT -->
+            <div class="section">
+                <div class="section-title">Layout & Structure</div>
+                
+                <div class="control-group">
+                    <label>Grid Mode</label>
+                    <select id="mode" data-state="mode">
+                        <option value="ordered">Ordered Grid</option>
+                        <option value="hexagonal">Hexagonal / Honeycomb</option>
+                        <option value="circular">Circular / Mandala</option>
+                        <option value="sine">Sine Wave</option>
+                        <option value="random">Random Scatter</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Base Size <span class="val-display" id="val-baseSize"></span></label>
+                    <input type="range" id="baseSize" data-state="baseSize" min="10" max="400">
+                </div>
+
+                <div class="control-group">
+                    <label>Spacing / Density <span class="val-display" id="val-spacing"></span></label>
+                    <input type="range" id="spacing" data-state="spacing" min="0" max="300">
+                </div>
+
+                <!-- Mode Specific Controls -->
+                <div id="ctrl-random" class="control-group hidden" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                    <label>Total Icons <span class="val-display" id="val-count"></span></label>
+                    <input type="range" id="count" data-state="count" min="10" max="2000">
+                </div>
+
+                <div id="ctrl-sine" class="hidden" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                    <div class="control-group">
+                        <label>Wave Amplitude <span class="val-display" id="val-sineAmp"></span></label>
+                        <input type="range" id="sineAmp" data-state="sineAmp" min="0" max="300">
+                    </div>
+                    <div class="control-group">
+                        <label>Wave Frequency <span class="val-display" id="val-sineFreq"></span></label>
+                        <input type="range" id="sineFreq" data-state="sineFreq" min="1" max="100">
+                    </div>
+                </div>
+
+                <div class="control-group" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                    <label>Randomize Size & Rotation <span class="val-display" id="val-randomness"></span></label>
+                    <input type="range" id="randomness" data-state="randomness" min="0" max="100">
+                </div>
+            </div>
+
+            <!-- EFFECTS -->
+            <div class="section">
+                <div class="section-title">Effects</div>
+                
+                <div class="control-group">
+                    <label>Global Opacity <span class="val-display" id="val-opacity"></span></label>
+                    <input type="range" id="opacity" data-state="opacity" min="1" max="100">
+                </div>
+
+                <div class="control-group" style="margin-top: 12px;">
+                    <label class="checkbox-label" style="margin-bottom: 8px;">
+                        <input type="checkbox" id="shadowEnabled" data-state="shadowEnabled">
+                        Enable Shadows / Glows
+                    </label>
+                    
+                    <div id="shadowContainer" class="hidden">
+                        <div class="control-group">
+                            <label>Color</label>
+                            <input type="color" id="shadowColor" data-state="shadowColor">
+                        </div>
+                        <div class="control-group">
+                            <label>Blur Radius <span class="val-display" id="val-shadowBlur"></span></label>
+                            <input type="range" id="shadowBlur" data-state="shadowBlur" min="0" max="100">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-group">
+                                <label>Offset X <span class="val-display" id="val-shadowX"></span></label>
+                                <input type="range" id="shadowX" data-state="shadowX" min="-50" max="50">
+                            </div>
+                            <div class="control-group">
+                                <label>Offset Y <span class="val-display" id="val-shadowY"></span></label>
+                                <input type="range" id="shadowY" data-state="shadowY" min="-50" max="50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="primary" id="downloadBtn">Export Image</button>
+        </div>
+    </aside>
+
+    <main class="preview-area">
+        <canvas id="canvas"></canvas>
+    </main>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        const DEFAULT_STATE = {
+            width: 1920,
+            height: 1080,
+            seamless: false,
+            bgColor: '#0f172a',
+            palette: ['#3b82f6', '#ec4899', '#10b981', '#f59e0b'],
+            tintEnabled: true,
+            mode: 'hexagonal', // ordered, hexagonal, circular, sine, random
+            baseSize: 60,
+            spacing: 30,
+            count: 300,
+            sineAmp: 100,
+            sineFreq: 20,
+            randomness: 20,
+            opacity: 100,
+            shadowEnabled: false,
+            shadowColor: '#000000',
+            shadowBlur: 15,
+            shadowX: 0,
+            shadowY: 10,
+            icons: [] // Array of { id, dataURL, weight, imgObj }
+        };
+
+        let state = { ...DEFAULT_STATE, palette: [...DEFAULT_STATE.palette], icons: [] };
+        
+        // --- CORE ELEMENTS ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let drawTimeout = null;
+
+        // --- SEEDED RANDOM (For stable layouts) ---
+        let seed = 1;
+        function random() {
+            let x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // --- LOCAL STORAGE ---
+        function saveState() {
+            try {
+                // Remove the actual Image objects before saving to avoid cyclic structures
+                const stateToSave = {
+                    ...state,
+                    icons: state.icons.map(i => ({ id: i.id, dataURL: i.dataURL, weight: i.weight }))
+                };
+                localStorage.setItem('patternforge-state', JSON.stringify(stateToSave));
+            } catch (e) {
+                console.warn("Storage quota exceeded, couldn't save preset with images.", e);
+            }
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('patternforge-state');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state = { ...DEFAULT_STATE, ...parsed };
+                    
+                    // Rehydrate image objects
+                    let loadedCount = 0;
+                    if (state.icons.length > 0) {
+                        state.icons.forEach(icon => {
+                            const img = new Image();
+                            img.onload = () => {
+                                icon.imgObj = img;
+                                loadedCount++;
+                                if (loadedCount === state.icons.length) {
+                                    syncUI();
+                                    requestDraw();
+                                }
+                            };
+                            img.src = icon.dataURL;
+                        });
+                        return; // Async load handles the sync
+                    }
+                } catch (e) { console.error("Failed to load preset", e); }
+            }
+            syncUI();
+            requestDraw();
+        }
+
+        // --- UI SYNCING ---
+        function syncUI() {
+            // Update Inputs from State
+            document.querySelectorAll('[data-state]').forEach(el => {
+                const key = el.getAttribute('data-state');
+                if (el.type === 'checkbox') el.checked = state[key];
+                else el.value = state[key];
+            });
+
+            // Update Value Displays for ranges
+            document.querySelectorAll('input[type="range"]').forEach(el => {
+                const display = document.getElementById(`val-${el.getAttribute('data-state')}`);
+                if (display) display.innerText = el.value;
+            });
+
+            // Conditional UI logic
+            document.getElementById('paletteContainer').style.opacity = state.tintEnabled ? '1' : '0.5';
+            document.getElementById('paletteContainer').style.pointerEvents = state.tintEnabled ? 'auto' : 'none';
+            
+            document.getElementById('shadowContainer').classList.toggle('hidden', !state.shadowEnabled);
+            
+            document.getElementById('ctrl-random').classList.toggle('hidden', state.mode !== 'random');
+            document.getElementById('ctrl-sine').classList.toggle('hidden', state.mode !== 'sine');
+
+            renderPalette();
+            renderIconList();
+        }
+
+        // Setup input listeners
+        document.querySelectorAll('[data-state]').forEach(el => {
+            el.addEventListener('input', (e) => {
+                const key = el.getAttribute('data-state');
+                let val = el.type === 'checkbox' ? el.checked : el.value;
+                if (el.type === 'number' || el.type === 'range') val = Number(val);
+                
+                state[key] = val;
+                
+                // Update display span
+                if (el.type === 'range') {
+                    const display = document.getElementById(`val-${key}`);
+                    if (display) display.innerText = val;
+                }
+
+                // Handle section toggles
+                if (key === 'tintEnabled' || key === 'shadowEnabled' || key === 'mode') {
+                    syncUI(); // Full re-sync for layout changes
+                }
+
+                saveState();
+                requestDraw();
+            });
+        });
+
+        // --- PALETTE MANAGER ---
+        function renderPalette() {
+            const list = document.getElementById('paletteList');
+            list.innerHTML = '';
+            state.palette.forEach((color, index) => {
+                const div = document.createElement('div');
+                div.className = 'palette-color';
+                
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.value = color;
+                input.addEventListener('input', (e) => {
+                    state.palette[index] = e.target.value;
+                    saveState();
+                    requestDraw();
+                });
+
+                const btn = document.createElement('button');
+                btn.className = 'remove-color';
+                btn.innerHTML = '✕';
+                btn.onclick = () => {
+                    if (state.palette.length <= 1) return; // Need at least 1 color
+                    state.palette.splice(index, 1);
+                    saveState();
+                    syncUI();
+                    requestDraw();
+                };
+
+                div.appendChild(input);
+                div.appendChild(btn);
+                list.appendChild(div);
+            });
+        }
+
+        document.getElementById('addColorBtn').addEventListener('click', () => {
+            state.palette.push('#ffffff');
+            saveState();
+            syncUI();
+            requestDraw();
+        });
+
+        // --- ICON MANAGER ---
+        document.getElementById('upload').addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            let loaded = 0;
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const dataURL = event.target.result;
+                    const img = new Image();
+                    img.onload = () => {
+                        state.icons.push({
+                            id: Date.now() + Math.random().toString(36).substr(2, 9),
+                            dataURL: dataURL,
+                            weight: 5,
+                            imgObj: img
+                        });
+                        loaded++;
+                        if (loaded === files.length) {
+                            saveState();
+                            syncUI();
+                            requestDraw();
+                        }
+                    };
+                    img.src = dataURL;
+                };
+                reader.readAsDataURL(file);
+            });
+            e.target.value = ''; // Reset input
+        });
+
+        function renderIconList() {
+            const list = document.getElementById('iconList');
+            list.innerHTML = '';
+            
+            if (state.icons.length === 0) {
+                list.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 10px;">No icons uploaded.</div>`;
+                return;
+            }
+
+            state.icons.forEach((icon, index) => {
+                const div = document.createElement('div');
+                div.className = 'icon-item';
+
+                const img = document.createElement('img');
+                img.src = icon.dataURL;
+
+                const weightControl = document.createElement('div');
+                weightControl.className = 'icon-weight';
+                weightControl.innerHTML = `<label>Weight: <span id="w-val-${icon.id}">${icon.weight}</span></label>`;
+                
+                const range = document.createElement('input');
+                range.type = 'range';
+                range.min = 1; range.max = 10; range.value = icon.weight;
+                range.addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    state.icons[index].weight = val;
+                    document.getElementById(`w-val-${icon.id}`).innerText = val;
+                    saveState();
+                    requestDraw();
+                });
+                weightControl.appendChild(range);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'icon-btn';
+                delBtn.innerHTML = `✕`;
+                delBtn.onclick = () => {
+                    state.icons.splice(index, 1);
+                    saveState();
+                    syncUI();
+                    requestDraw();
+                };
+
+                div.appendChild(img);
+                div.appendChild(weightControl);
+                div.appendChild(delBtn);
+                list.appendChild(div);
+            });
+        }
+
+        // --- DRAWING LOGIC ---
+        function requestDraw() {
+            if (drawTimeout) cancelAnimationFrame(drawTimeout);
+            drawTimeout = requestAnimationFrame(draw);
+        }
+
+        function getWeightedIcon() {
+            if (state.icons.length === 0) return null;
+            let totalWeight = state.icons.reduce((sum, icon) => sum + icon.weight, 0);
+            let r = random() * totalWeight;
+            for (let icon of state.icons) {
+                if (r < icon.weight) return icon;
+                r -= icon.weight;
+            }
+            return state.icons[0];
+        }
+
+        function getTintedIcon(img, w, h, color) {
+            if (!state.tintEnabled || !color) return img;
+            const off = document.createElement('canvas');
+            off.width = w; off.height = h;
+            const octx = off.getContext('2d');
+            octx.drawImage(img, 0, 0, w, h);
+            octx.globalCompositeOperation = "source-in";
+            octx.fillStyle = color;
+            octx.fillRect(0, 0, w, h);
+            return off;
+        }
+
+        function drawSeamlessWrapped(ctx, img, x, y, w, h, rotation) {
+            const positions = [[0, 0]];
+            
+            // If seamless tile mode is on, draw 8 extra copies around the perimeter
+            if (state.seamless) {
+                const cw = canvas.width;
+                const ch = canvas.height;
+                positions.push(
+                    [-cw, 0], [cw, 0], [0, -ch], [0, ch],
+                    [-cw, -ch], [cw, -ch], [-cw, ch], [cw, ch]
+                );
+            }
+
+            positions.forEach(pos => {
+                ctx.save();
+                ctx.translate(x + pos[0], y + pos[1]);
+                ctx.rotate(rotation);
+                
+                // Shadows config
+                if (state.shadowEnabled) {
+                    ctx.shadowColor = state.shadowColor;
+                    ctx.shadowBlur = state.shadowBlur;
+                    ctx.shadowOffsetX = state.shadowX;
+                    ctx.shadowOffsetY = state.shadowY;
+                }
+                
+                ctx.globalAlpha = state.opacity / 100;
+                ctx.drawImage(img, -w/2, -h/2, w, h);
+                ctx.restore();
+            });
+        }
+
+        function draw() {
+            canvas.width = state.width;
+            canvas.height = state.height;
+            
+            // BG
+            ctx.fillStyle = state.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (state.icons.length === 0) return;
+
+            seed = 42; // Reset seed for deterministic layout
+
+            const bs = state.baseSize;
+            const sp = state.spacing;
+            const randFactor = state.randomness / 100;
+            
+            // Determine loop bounds (extend slightly outside canvas to allow seamless wrapping to catch edges)
+            const pad = bs * 2;
+            const minX = -pad, maxX = canvas.width + pad;
+            const minY = -pad, maxY = canvas.height + pad;
+
+            function processDraw(x, y) {
+                const icon = getWeightedIcon();
+                if (!icon) return;
+
+                const color = state.palette[Math.floor(random() * state.palette.length)];
+                
+                // Randomness variations
+                const scaleMod = 1 + ((random() * 2 - 1) * randFactor);
+                const finalSize = Math.max(5, bs * scaleMod);
+                const rotation = (random() * Math.PI * 2) * randFactor;
+                const xOffset = (random() * 2 - 1) * (sp * randFactor);
+                const yOffset = (random() * 2 - 1) * (sp * randFactor);
+
+                // Aspect Ratio
+                const ratio = icon.imgObj.width / icon.imgObj.height;
+                const w = ratio > 1 ? finalSize : finalSize * ratio;
+                const h = ratio > 1 ? finalSize / ratio : finalSize;
+
+                const renderImg = getTintedIcon(icon.imgObj, w, h, color);
+                
+                drawSeamlessWrapped(ctx, renderImg, x + xOffset, y + yOffset, w, h, rotation);
+            }
+
+            if (state.mode === 'ordered') {
+                const step = bs + sp;
+                for (let y = minY; y < maxY; y += step) {
+                    for (let x = minX; x < maxX; x += step) {
+                        processDraw(x, y);
+                    }
+                }
+            } 
+            else if (state.mode === 'hexagonal') {
+                const stepX = bs + sp;
+                const stepY = stepX * 0.866; // sqrt(3)/2
+                let row = 0;
+                for (let y = minY; y < maxY; y += stepY) {
+                    const rowOffsetX = (row % 2 === 0) ? 0 : stepX / 2;
+                    for (let x = minX; x < maxX; x += stepX) {
+                        processDraw(x + rowOffsetX, y);
+                    }
+                    row++;
+                }
+            }
+            else if (state.mode === 'circular') {
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const step = bs + sp;
+                
+                // Center icon
+                processDraw(cx, cy);
+
+                // Rings
+                const maxRadius = Math.max(canvas.width, canvas.height);
+                for (let r = step; r < maxRadius; r += step) {
+                    const circ = 2 * Math.PI * r;
+                    const itemsInRing = Math.floor(circ / step);
+                    if(itemsInRing === 0) continue;
+                    
+                    const angleStep = (2 * Math.PI) / itemsInRing;
+                    for (let i = 0; i < itemsInRing; i++) {
+                        const angle = i * angleStep;
+                        const x = cx + Math.cos(angle) * r;
+                        const y = cy + Math.sin(angle) * r;
+                        processDraw(x, y);
+                    }
+                }
+            }
+            else if (state.mode === 'sine') {
+                const stepX = bs + sp;
+                const stepY = (bs + sp) * 2;
+                const freq = state.sineFreq / 1000;
+                const amp = state.sineAmp;
+
+                for (let baseY = minY; baseY < maxY; baseY += stepY) {
+                    for (let x = minX; x < maxX; x += stepX) {
+                        const y = baseY + Math.sin(x * freq) * amp;
+                        processDraw(x, y);
+                    }
+                }
+            }
+            else if (state.mode === 'random') {
+                for (let i = 0; i < state.count; i++) {
+                    const x = random() * canvas.width;
+                    const y = random() * canvas.height;
+                    processDraw(x, y);
+                }
+            }
+        }
+
+        // --- BUTTONS ---
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `patternforge-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if(confirm('Clear all icons and reset to default settings?')) {
+                state = { ...DEFAULT_STATE, palette: [...DEFAULT_STATE.palette], icons: [] };
+                saveState();
+                syncUI();
+                requestDraw();
+            }
+        });
+
+        // Initialize
+        loadState();
+
+    </script>
+</body>
+</html>
