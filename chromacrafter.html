@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChromaCrafter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Custom CSS to smooth out inputs and scrollbars */
+    input[type="range"] {
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.2);
+      height: 4px;
+      border-radius: 2px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: white;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    input[type="range"]:disabled::-webkit-slider-thumb {
+      background: #888;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body class="bg-zinc-900 text-white font-sans overflow-hidden selection:bg-black/20">
+
+  <div class="h-screen w-full flex flex-col relative">
+    
+    <!-- Header -->
+    <header class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-40 pointer-events-none">
+      <div class="flex items-center gap-2 text-white drop-shadow-md">
+        <i data-lucide="palette" class="w-6 h-6"></i>
+        <h1 class="font-bold text-xl tracking-tight">ChromaCrafter</h1>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <!-- History Controls -->
+        <div class="flex items-center bg-black/20 backdrop-blur-md rounded-full border border-white/10 pointer-events-auto p-1 shadow-lg transition-opacity">
+          <button id="btn-undo" class="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white" title="Undo (Ctrl+Z)" disabled>
+            <i data-lucide="undo-2" class="w-4 h-4"></i>
+          </button>
+          <div class="w-px h-4 bg-white/20 mx-1"></div>
+          <button id="btn-redo" class="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all text-white" title="Redo (Ctrl+Shift+Z)" disabled>
+            <i data-lucide="redo-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="hidden md:flex items-center gap-2 text-white/80 bg-black/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 pointer-events-auto shadow-lg">
+          <span class="text-sm font-medium">Press <kbd class="px-2 py-1 bg-white/20 rounded text-xs mx-1 border border-white/10 shadow-sm font-sans">Space</kbd> to generate</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Palette Columns Container -->
+    <main id="palette-container" class="flex-1 flex flex-col md:flex-row w-full h-full relative"></main>
+
+    <!-- Control Panel -->
+    <div class="absolute bottom-0 left-0 w-full p-4 md:p-8 flex justify-center items-end pointer-events-none z-40">
+      <div class="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-700 p-6 rounded-3xl shadow-2xl pointer-events-auto flex flex-col md:flex-row gap-8 items-center text-zinc-300 w-full max-w-4xl">
+        
+        <div class="flex flex-col gap-2 w-full md:w-1/4">
+          <label class="text-xs font-semibold tracking-wider text-zinc-400 uppercase flex items-center gap-2">
+            <i data-lucide="settings-2" class="w-4 h-4"></i> Harmony Mode
+          </label>
+          <select id="mode-select" class="bg-zinc-800 border border-zinc-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-white/20 cursor-pointer appearance-none text-white font-medium">
+            <option value="monochromatic">Monochromatic</option>
+            <option value="analogous">Analogous</option>
+            <option value="complementary">Complementary</option>
+            <option value="triadic">Triadic</option>
+            <option value="tetradic">Tetradic</option>
+          </select>
+        </div>
+
+        <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="flex flex-col gap-3">
+            <div class="flex justify-between items-center text-xs font-semibold text-zinc-400 uppercase">
+              <span>Distance</span>
+              <span id="dist-val" class="text-zinc-500">30°</span>
+            </div>
+            <input id="dist-slider" type="range" min="0" max="90" value="30" class="w-full cursor-pointer">
+          </div>
+
+          <div class="flex flex-col gap-3">
+            <div class="flex justify-between items-center text-xs font-semibold text-zinc-400 uppercase">
+              <span>Saturation</span>
+              <span id="sat-val" class="text-zinc-500">80%</span>
+            </div>
+            <input id="sat-slider" type="range" min="0" max="100" value="80" class="w-full cursor-pointer">
+          </div>
+
+          <div class="flex flex-col gap-3">
+            <div class="flex justify-between items-center text-xs font-semibold text-zinc-400 uppercase">
+              <span>Contrast</span>
+              <span id="cont-val" class="text-zinc-500">50%</span>
+            </div>
+            <input id="cont-slider" type="range" min="0" max="100" value="50" class="w-full cursor-pointer">
+          </div>
+        </div>
+
+        <button id="btn-generate-mobile" class="md:hidden w-full flex items-center justify-center gap-2 bg-white text-zinc-900 p-3 rounded-xl font-bold hover:bg-zinc-200 transition-colors">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i> Generate
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- Color Math & Utility Functions ---
+    function hexToRgb(hex) {
+      hex = hex.replace(/^#/, '');
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+      return [
+        parseInt(hex.substr(0, 2), 16),
+        parseInt(hex.substr(2, 2), 16),
+        parseInt(hex.substr(4, 2), 16)
+      ];
+    }
+
+    function getLuminance(hex) {
+      const [r, g, b] = hexToRgb(hex).map(v => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    function getContrastRatio(hex1, hex2) {
+      const l1 = getLuminance(hex1);
+      const l2 = getLuminance(hex2);
+      const lightest = Math.max(l1, l2);
+      const darkest = Math.min(l1, l2);
+      return (lightest + 0.05) / (darkest + 0.05);
+    }
+
+    function hexToHsl(hex) {
+      const [r, g, b] = hexToRgb(hex).map(c => c / 255);
+      let max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+
+      if (max !== min) {
+        let d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+    }
+
+    function hslToHex(h, s, l) {
+      l /= 100;
+      const a = s * Math.min(l, 1 - l) / 100;
+      const f = n => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color).toString(16).padStart(2, '0');
+      };
+      return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+    }
+
+    function getTextColorYIQ(hex) {
+      const [r, g, b] = hexToRgb(hex);
+      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      return yiq >= 128 ? 'text-zinc-900' : 'text-white';
+    }
+
+    function isValidHex(hex) {
+      return /^#([0-9A-F]{3}){1,2}$/i.test(hex);
+    }
+
+    // --- Application State ---
+    let colors = Array(5).fill(null).map(() => ({ hex: '#FFFFFF', locked: false }));
+    let settings = { baseHue: 0, baseLightness: 50, mode: 'analogous', distance: 30, saturation: 80, contrast: 50 };
+    let historyStack = { past: [], present: null, future: [] };
+
+    // --- DOM Elements ---
+    const paletteContainer = document.getElementById('palette-container');
+    const distSlider = document.getElementById('dist-slider');
+    const satSlider = document.getElementById('sat-slider');
+    const contSlider = document.getElementById('cont-slider');
+    const distVal = document.getElementById('dist-val');
+    const satVal = document.getElementById('sat-val');
+    const contVal = document.getElementById('cont-val');
+    const modeSelect = document.getElementById('mode-select');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnRedo = document.getElementById('btn-redo');
+
+    // --- Initialization & UI Building ---
+    function initializeDOM() {
+      for (let i = 0; i < 5; i++) {
+        const col = document.createElement('div');
+        col.id = `col-${i}`;
+        col.className = 'flex-1 flex flex-col items-center justify-center relative group transition-colors duration-500 ease-out min-h-[20vh] md:min-h-full';
+        
+        col.innerHTML = `
+          <div id="col-inner-${i}" class="flex flex-col items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-10">
+            <input id="input-${i}" type="text" spellcheck="false" maxlength="7"
+              class="bg-transparent text-center text-2xl md:text-3xl font-bold tracking-wider outline-none w-32 md:w-40 border-b-2 border-transparent focus:border-current transition-colors">
+            
+            <div class="flex gap-4 items-center">
+              <button id="lock-btn-${i}" class="p-3 hover:bg-black/10 rounded-full transition-colors backdrop-blur-sm" title="Lock/Unlock color"></button>
+              <button id="copy-btn-${i}" class="p-3 hover:bg-black/10 rounded-full transition-colors backdrop-blur-sm" title="Copy HEX">
+                <i data-lucide="copy" class="w-6 h-6"></i>
+              </button>
+            </div>
+          </div>
+          ${i < 4 ? `
+          <div class="absolute left-1/2 bottom-0 translate-y-1/2 md:top-1/2 md:left-auto md:right-0 md:-translate-y-1/2 md:translate-x-1/2 z-20 pointer-events-none drop-shadow-xl">
+            <div class="flex flex-col items-center justify-center bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1.5 backdrop-blur-md bg-opacity-95 shadow-2xl transition-transform hover:scale-110">
+              <span id="badge-val-${i}" class="font-mono text-[11px] md:text-xs font-bold leading-none"></span>
+              <span id="badge-text-${i}" class="text-[8px] md:text-[9px] text-zinc-400 font-bold tracking-wider uppercase leading-none mt-1"></span>
+            </div>
+          </div>` : ''}
+        `;
+        paletteContainer.appendChild(col);
+
+        // Bind specific listeners to new elements
+        document.getElementById(`input-${i}`).addEventListener('input', (e) => handleHexChange(i, e.target.value));
+        document.getElementById(`lock-btn-${i}`).addEventListener('click', () => toggleLock(i));
+        document.getElementById(`copy-btn-${i}`).addEventListener('click', () => copyToClipboard(colors[i].hex, i));
+      }
+      lucide.createIcons();
+    }
+
+    function updateUI() {
+      colors.forEach((col, i) => {
+        const colEl = document.getElementById(`col-${i}`);
+        colEl.style.backgroundColor = col.hex;
+
+        const inner = document.getElementById(`col-inner-${i}`);
+        inner.className = `flex flex-col items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-10 ${getTextColorYIQ(col.hex)}`;
+
+        const input = document.getElementById(`input-${i}`);
+        if (document.activeElement !== input) {
+          input.value = col.hex.toUpperCase();
+        }
+
+        const lockBtn = document.getElementById(`lock-btn-${i}`);
+        lockBtn.innerHTML = col.locked 
+          ? '<i data-lucide="lock" class="w-6 h-6"></i>' 
+          : '<i data-lucide="unlock" class="w-6 h-6 opacity-60"></i>';
+        
+        // Re-initialize icons inside the updated lock button
+        lucide.createIcons({ root: lockBtn });
+
+        // Update contrast badge
+        if (i < 4) {
+          const ratio = getContrastRatio(col.hex, colors[i+1].hex);
+          let qualityClass = "text-red-400", qualityText = "Poor";
+          if (ratio >= 7) { qualityClass = "text-emerald-400"; qualityText = "AAA"; }
+          else if (ratio >= 4.5) { qualityClass = "text-emerald-400"; qualityText = "AA"; }
+          else if (ratio >= 3) { qualityClass = "text-amber-400"; qualityText = "AA Large"; }
+
+          const badgeVal = document.getElementById(`badge-val-${i}`);
+          const badgeText = document.getElementById(`badge-text-${i}`);
+          badgeVal.textContent = ratio.toFixed(2);
+          badgeVal.className = `font-mono text-[11px] md:text-xs font-bold leading-none ${qualityClass}`;
+          badgeText.textContent = qualityText;
+        }
+      });
+
+      // Update Controls
+      modeSelect.value = settings.mode;
+      distSlider.value = settings.distance;
+      satSlider.value = settings.saturation;
+      contSlider.value = settings.contrast;
+      
+      distVal.textContent = settings.distance + '°';
+      satVal.textContent = settings.saturation + '%';
+      contVal.textContent = settings.contrast + '%';
+
+      // Disable distance for specific modes
+      if (['monochromatic', 'complementary'].includes(settings.mode)) {
+        distSlider.disabled = true;
+        distSlider.classList.add('opacity-30', 'cursor-not-allowed');
+      } else {
+        distSlider.disabled = false;
+        distSlider.classList.remove('opacity-30', 'cursor-not-allowed');
+      }
+
+      // Update History Buttons
+      btnUndo.disabled = historyStack.past.length === 0;
+      btnRedo.disabled = historyStack.future.length === 0;
+    }
+
+    // --- History Logic ---
+    function commitToHistory() {
+      const newPresent = { colors: JSON.parse(JSON.stringify(colors)), settings: { ...settings } };
+      if (historyStack.present && JSON.stringify(historyStack.present.colors) === JSON.stringify(newPresent.colors)) return;
+      
+      historyStack.past.push(historyStack.present);
+      if (historyStack.past.length > 50) historyStack.past.shift();
+      historyStack.past = historyStack.past.filter(Boolean); // Remove nulls
+      historyStack.present = newPresent;
+      historyStack.future = [];
+      
+      localStorage.setItem('chromaHistory', JSON.stringify(historyStack));
+      updateUI();
+    }
+
+    function undo() {
+      if (historyStack.past.length === 0) return;
+      const previous = historyStack.past.pop();
+      historyStack.future.unshift(historyStack.present);
+      historyStack.present = previous;
+      
+      colors = JSON.parse(JSON.stringify(previous.colors));
+      settings = { ...previous.settings };
+      localStorage.setItem('chromaHistory', JSON.stringify(historyStack));
+      updateUI();
+    }
+
+    function redo() {
+      if (historyStack.future.length === 0) return;
+      const next = historyStack.future.shift();
+      historyStack.past.push(historyStack.present);
+      historyStack.present = next;
+      
+      colors = JSON.parse(JSON.stringify(next.colors));
+      settings = { ...next.settings };
+      localStorage.setItem('chromaHistory', JSON.stringify(historyStack));
+      updateUI();
+    }
+
+    // --- Harmony Engine ---
+    function getIdealHSL(index, rootH, rootL, currentSettings) {
+      const { mode, distance, saturation, contrast } = currentSettings;
+      let h = rootH;
+      let s = saturation; 
+      
+      const lOffsets = [0, 15, -15, 30, -30];
+      let l = Math.max(10, Math.min(90, rootL + lOffsets[index] * (contrast / 100)));
+
+      switch (mode) {
+        case 'analogous': h = (rootH + [0, distance, -distance, 2 * distance, -2 * distance][index] + 360) % 360; break;
+        case 'complementary': h = (rootH + [0, 180, 0, 180, 0][index] + 360) % 360; break;
+        case 'triadic': h = (rootH + [0, 120, 240, 120, 240][index] + 360) % 360; break;
+        case 'tetradic': h = (rootH + [0, 90, 180, 270, 90][index] + 360) % 360; break;
+      }
+      return [h, s, l];
+    }
+
+    function generatePalette(isNewRandom = false, doCommit = false, overrideSettings = null) {
+      const currentSettings = overrideSettings || settings;
+      let newHue = currentSettings.baseHue;
+      let newLightness = currentSettings.baseLightness;
+
+      if (isNewRandom) {
+        newHue = Math.floor(Math.random() * 360);
+        newLightness = Math.floor(Math.random() * 20) + 40;
+      }
+
+      const firstLocked = colors.find(c => c.locked);
+      if (firstLocked) {
+        const [h, , l] = hexToHsl(firstLocked.hex);
+        newHue = h;
+        newLightness = l;
+      }
+
+      settings = { ...currentSettings, baseHue: newHue, baseLightness: newLightness };
+      
+      colors = colors.map((col, i) => {
+        if (col.locked) return col;
+        const [h, s, l] = getIdealHSL(i, newHue, newLightness, settings);
+        return { ...col, hex: hslToHex(h, s, l) };
+      });
+
+      updateUI();
+      if (doCommit) commitToHistory();
+    }
+
+    // --- Event Handlers ---
+    function handleHexChange(index, newHex) {
+      colors[index].hex = newHex;
+      if (isValidHex(newHex)) {
+         colors[index].locked = true;
+         generatePalette(false, true);
+      } else {
+         updateUI();
+      }
+    }
+
+    function toggleLock(index) {
+      colors[index].locked = !colors[index].locked;
+      generatePalette(false, true);
+    }
+
+    function copyToClipboard(hex, index) {
+      const btn = document.getElementById(`copy-btn-${index}`);
+      
+      const doCopy = () => {
+        btn.innerHTML = '<i data-lucide="check" class="w-6 h-6"></i>';
+        lucide.createIcons({ root: btn });
+        setTimeout(() => {
+          btn.innerHTML = '<i data-lucide="copy" class="w-6 h-6"></i>';
+          lucide.createIcons({ root: btn });
+        }, 1500);
+      };
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(hex).then(doCopy).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+
+      function fallbackCopy() {
+        const textArea = document.createElement("textarea");
+        textArea.value = hex;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try { document.execCommand('copy'); doCopy(); } catch (err) {}
+        document.body.removeChild(textArea);
+      }
+    }
+
+    // --- Bind Global Event Listeners ---
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeDOM();
+
+      // Load History
+      const saved = localStorage.getItem('chromaHistory');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.present) {
+            historyStack = parsed;
+            colors = parsed.present.colors;
+            settings = parsed.present.settings;
+            updateUI();
+            return;
+          }
+        } catch(e) { console.warn("Failed to parse history."); }
+      }
+      generatePalette(true, true);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      
+      // History shortcuts
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo(); else undo();
+        return;
+      }
+
+      // Spacebar generation
+      if (e.code === 'Space') {
+        e.preventDefault();
+        const hasLocks = colors.some(c => c.locked);
+        if (hasLocks) {
+          const randSettings = {
+            ...settings,
+            distance: Math.floor(Math.random() * 90),
+            saturation: Math.floor(Math.random() * 60) + 40,
+            contrast: Math.floor(Math.random() * 60) + 20
+          };
+          generatePalette(false, true, randSettings);
+        } else {
+          generatePalette(true, true);
+        }
+      }
+    });
+
+    // Control Listeners
+    modeSelect.addEventListener('change', (e) => {
+      settings.mode = e.target.value;
+      generatePalette(false, true);
+    });
+
+    const bindSlider = (sliderEl, settingKey) => {
+      sliderEl.addEventListener('input', (e) => {
+        settings[settingKey] = Number(e.target.value);
+        generatePalette(false, false); // realtime update, no commit
+      });
+      // Use change and pointerup to catch drag ends for history commit
+      sliderEl.addEventListener('change', () => commitToHistory());
+      sliderEl.addEventListener('pointerup', () => commitToHistory());
+    };
+
+    bindSlider(distSlider, 'distance');
+    bindSlider(satSlider, 'saturation');
+    bindSlider(contSlider, 'contrast');
+
+    // History Buttons
+    btnUndo.addEventListener('click', undo);
+    btnRedo.addEventListener('click', redo);
+
+    // Mobile Generate Button
+    document.getElementById('btn-generate-mobile').addEventListener('click', () => {
+      const hasLocks = colors.some(c => c.locked);
+      if (hasLocks) {
+        generatePalette(false, true, {
+          ...settings,
+          distance: Math.floor(Math.random() * 90),
+          saturation: Math.floor(Math.random() * 60) + 40,
+          contrast: Math.floor(Math.random() * 60) + 20
+        });
+      } else {
+        generatePalette(true, true);
+      }
+    });
+
+  </script>
+</body>
+</html>
