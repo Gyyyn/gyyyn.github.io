@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Blob Maker Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 999px;
+        }
+
+        /* Color Picker Styling */
+        input[type=color] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 36px;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 0;
+            background: transparent;
+        }
+        input[type=color]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type=color]::-webkit-color-swatch {
+            border: none;
+            border-radius: 6px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+        }
+
+        /* Checkered Background for Canvas */
+        .checkered-bg {
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(45deg, #f1f5f9 25%, transparent 25%), 
+                linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f1f5f9 75%), 
+                linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        .glass-panel {
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        /* Canvas container positioning */
+        #canvas-wrapper {
+            position: relative;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e2e8f0;
+            padding: 2rem;
+        }
+
+        svg {
+            display: block;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .blob-path {
+            cursor: grab;
+            transition: opacity 0.2s;
+        }
+        .blob-path:active {
+            cursor: grabbing;
+        }
+        .blob-path.selected {
+            stroke: #3b82f6;
+            stroke-width: 2px;
+            stroke-dasharray: 5,5;
+        }
+        
+        .layer-item.active {
+            background-color: #e0e7ff;
+            border-color: #818cf8;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-10 shrink-0">
+        <div>
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-500">Blob Maker Pro</h1>
+            <p class="text-xs text-slate-500 font-medium">Multi-Layer Vector Composition</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="exportSVG()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                SVG
+            </button>
+            <button onclick="exportPNG()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                PNG
+            </button>
+            <button onclick="copySVG()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition shadow-md shadow-indigo-200 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                Copy Code
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area (3 Columns) -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <aside class="w-64 glass-panel flex flex-col shrink-0 z-10 shadow-sm">
+            <!-- Canvas Setup -->
+            <div class="p-4 border-b border-slate-200 bg-slate-50">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Canvas Size (px)</h2>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs text-slate-500 mb-1 block">Width</label>
+                        <input type="number" id="canvas-w" value="800" class="w-full bg-white border border-slate-300 rounded-md px-2 py-1 text-sm outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-slate-500 mb-1 block">Height</label>
+                        <input type="number" id="canvas-h" value="800" class="w-full bg-white border border-slate-300 rounded-md px-2 py-1 text-sm outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layers Panel -->
+            <div class="p-4 flex flex-col flex-1 overflow-hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Layers</h2>
+                    <button onclick="addBlob()" class="text-indigo-600 hover:text-indigo-800 p-1 bg-indigo-50 rounded-md transition" title="Add new blob">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    </button>
+                </div>
+                <!-- Layers List Container -->
+                <div id="layers-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <!-- Layer items injected here -->
+                </div>
+            </div>
+        </aside>
+
+        <main id="canvas-wrapper" class="flex-1">
+            <div id="svg-container" class="checkered-bg">
+                <!-- SVG dynamically injected here -->
+            </div>
+        </main>
+
+        <aside class="w-80 glass-panel flex flex-col shrink-0 z-10 shadow-sm overflow-y-auto bg-white">
+            <div id="properties-panel" class="p-5 flex flex-col gap-6">
+                <!-- Fallback when no layer is selected -->
+                <div id="no-selection" class="text-center text-slate-400 mt-10">
+                    Select a layer to edit properties.
+                </div>
+                
+                <!-- Properties UI (hidden by default) -->
+                <div id="properties-ui" class="hidden flex-col gap-6">
+                    
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-bold text-slate-800" id="prop-title">Blob Settings</h2>
+                        <button onclick="randomizeActiveBlob()" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 transition font-medium">Randomize</button>
+                    </div>
+
+                    <!-- Layout & Size -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b pb-1">Dimensions (px)</h3>
+                        <div class="flex gap-3">
+                            <div class="flex-1">
+                                <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">
+                                    Size X <span id="val-sizeX" class="text-indigo-600">300</span>
+                                </label>
+                                <input type="range" id="input-sizeX" min="10" max="2000" value="300">
+                            </div>
+                            <div class="flex-1">
+                                <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">
+                                    Size Y <span id="val-sizeY" class="text-indigo-600">300</span>
+                                </label>
+                                <input type="range" id="input-sizeY" min="10" max="2000" value="300">
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="flex-1">
+                                <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">Pos X</label>
+                                <input type="number" id="input-cx" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none">
+                            </div>
+                            <div class="flex-1">
+                                <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">Pos Y</label>
+                                <input type="number" id="input-cy" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shape Generation -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b pb-1">Shape</h3>
+                        <div>
+                            <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">
+                                Complexity (Points) <span id="val-points" class="text-indigo-600">7</span>
+                            </label>
+                            <input type="range" id="input-points" min="3" max="50" value="7">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">
+                                Randomness <span id="val-randomness" class="text-indigo-600">50%</span>
+                            </label>
+                            <input type="range" id="input-randomness" min="0" max="100" value="50">
+                        </div>
+                    </div>
+
+                    <!-- Colors & Appearance -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-end border-b pb-1">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Appearance</h3>
+                            <button onclick="generateCrazyGradient()" class="text-[10px] bg-gradient-to-r from-pink-500 to-yellow-500 text-white px-2 py-1 rounded shadow-sm hover:opacity-90 font-bold uppercase tracking-wider">
+                                Crazy Colors!
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs font-medium text-slate-600 mb-1 block">Fill Type</label>
+                            <select id="input-fillType" class="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 text-sm outline-none focus:border-indigo-500">
+                                <option value="solid">Solid Color</option>
+                                <option value="linear">Linear Gradient</option>
+                                <option value="radial">Radial Gradient</option>
+                            </select>
+                        </div>
+
+                        <div id="angle-container" class="hidden">
+                            <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">
+                                Gradient Angle <span id="val-angle" class="text-indigo-600">45°</span>
+                            </label>
+                            <input type="range" id="input-angle" min="0" max="360" value="45">
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-medium text-slate-600">Colors</label>
+                                <button id="btn-add-color" onclick="addColor()" class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium hidden">
+                                    + Add Color
+                                </button>
+                            </div>
+                            <div id="colors-list" class="space-y-2">
+                                <!-- Dynamic color inputs injected here -->
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs font-medium text-slate-600 mb-1 flex justify-between">
+                                Opacity <span id="val-opacity" class="text-indigo-600">100%</span>
+                            </label>
+                            <input type="range" id="input-opacity" min="0" max="100" value="100">
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-message" class="fixed bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-2xl opacity-0 transform translate-y-4 transition-all duration-300 pointer-events-none z-50 flex items-center gap-3">
+        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toast-text">Success!</span>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let appState = {
+            canvasW: 800,
+            canvasH: 600,
+            blobs: [],
+            activeBlobId: null,
+            blobCounter: 0
+        };
+
+        // DOM Elements
+        const DOM = {
+            canvasW: document.getElementById('canvas-w'),
+            canvasH: document.getElementById('canvas-h'),
+            layersList: document.getElementById('layers-list'),
+            svgContainer: document.getElementById('svg-container'),
+            
+            // Properties UI
+            propsUI: document.getElementById('properties-ui'),
+            noSelection: document.getElementById('no-selection'),
+            
+            sizeX: document.getElementById('input-sizeX'),
+            sizeY: document.getElementById('input-sizeY'),
+            valSizeX: document.getElementById('val-sizeX'),
+            valSizeY: document.getElementById('val-sizeY'),
+            
+            cx: document.getElementById('input-cx'),
+            cy: document.getElementById('input-cy'),
+            
+            points: document.getElementById('input-points'),
+            valPoints: document.getElementById('val-points'),
+            
+            randomness: document.getElementById('input-randomness'),
+            valRandomness: document.getElementById('val-randomness'),
+            
+            fillType: document.getElementById('input-fillType'),
+            angleContainer: document.getElementById('angle-container'),
+            angle: document.getElementById('input-angle'),
+            valAngle: document.getElementById('val-angle'),
+            
+            colorsList: document.getElementById('colors-list'),
+            btnAddColor: document.getElementById('btn-add-color'),
+            
+            opacity: document.getElementById('input-opacity'),
+            valOpacity: document.getElementById('val-opacity'),
+            
+            toast: document.getElementById('toast-message'),
+            toastText: document.getElementById('toast-text')
+        };
+
+        // --- Helper Classes & Functions ---
+
+        class BlobShape {
+            constructor(name, cx, cy) {
+                appState.blobCounter++;
+                this.id = 'blob_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+                this.name = name || `Blob ${appState.blobCounter}`;
+                this.cx = cx || appState.canvasW / 2;
+                this.cy = cy || appState.canvasH / 2;
+                this.sizeX = 300;
+                this.sizeY = 300;
+                this.points = 7;
+                this.randomness = 50;
+                this.opacity = 1;
+                this.fillType = 'linear'; // 'solid', 'linear', 'radial'
+                this.angle = 45;
+                this.colors = ['#6366f1', '#ec4899'];
+                this.generateSeeds();
+            }
+
+            generateSeeds() {
+                this.seeds = [];
+                for (let i = 0; i < this.points; i++) {
+                    this.seeds.push((Math.random() * 2) - 1);
+                }
+            }
+            
+            clone() {
+                const newBlob = new BlobShape(this.name + " copy", this.cx + 20, this.cy + 20);
+                newBlob.sizeX = this.sizeX;
+                newBlob.sizeY = this.sizeY;
+                newBlob.points = this.points;
+                newBlob.randomness = this.randomness;
+                newBlob.opacity = this.opacity;
+                newBlob.fillType = this.fillType;
+                newBlob.angle = this.angle;
+                newBlob.colors = [...this.colors];
+                newBlob.seeds = [...this.seeds];
+                return newBlob;
+            }
+        }
+
+        // Generate random Hex Color
+        function getRandomColor() {
+            return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        }
+
+        // --- Core Application Logic ---
+
+
+        function init() {
+            // Setup canvas size listeners
+            DOM.canvasW.addEventListener('input', (e) => { appState.canvasW = parseInt(e.target.value) || 100; renderAll(); });
+            DOM.canvasH.addEventListener('input', (e) => { appState.canvasH = parseInt(e.target.value) || 100; renderAll(); });
+            
+            // Add initial blob
+            addBlob();
+            
+            // Bind properties listeners
+            bindPropertiesListeners();
+            
+            // Setup SVG drag events
+            setupSVGDrag();
+        }
+
+        function addBlob() {
+            const blob = new BlobShape();
+            appState.blobs.unshift(blob); // Add to top of stack
+            appState.activeBlobId = blob.id;
+            renderAll();
+        }
+
+        function duplicateBlob(id) {
+            const index = appState.blobs.findIndex(b => b.id === id);
+            if (index > -1) {
+                const newBlob = appState.blobs[index].clone();
+                appState.blobs.splice(index, 0, newBlob);
+                appState.activeBlobId = newBlob.id;
+                renderAll();
+            }
+        }
+
+        function deleteBlob(id) {
+            appState.blobs = appState.blobs.filter(b => b.id !== id);
+            if (appState.activeBlobId === id) {
+                appState.activeBlobId = appState.blobs.length > 0 ? appState.blobs[0].id : null;
+            }
+            renderAll();
+        }
+
+        function selectBlob(id) {
+            if(appState.activeBlobId !== id) {
+                appState.activeBlobId = id;
+                renderAll();
+            }
+        }
+
+        function getActiveBlob() {
+            return appState.blobs.find(b => b.id === appState.activeBlobId);
+        }
+
+        function randomizeActiveBlob() {
+            const blob = getActiveBlob();
+            if (!blob) return;
+            blob.generateSeeds();
+            renderAll();
+        }
+        
+        function generateCrazyGradient() {
+            const blob = getActiveBlob();
+            if (!blob) return;
+            blob.fillType = Math.random() > 0.5 ? 'linear' : 'radial';
+            const numColors = Math.floor(Math.random() * 4) + 3; // 3 to 6 colors
+            blob.colors = [];
+            for(let i=0; i<numColors; i++) {
+                blob.colors.push(getRandomColor());
+            }
+            // Update UI completely
+            renderAll();
+        }
+
+        function addColor() {
+            const blob = getActiveBlob();
+            if (!blob) return;
+            if(blob.colors.length < 10) { // Limit to 10 colors
+                blob.colors.push('#ffffff');
+                updatePropertiesUI();
+                renderSVG();
+            }
+        }
+
+        function removeColor(index) {
+            const blob = getActiveBlob();
+            if (!blob || blob.colors.length <= 2) return; // Minimum 2 colors for gradient
+            blob.colors.splice(index, 1);
+            updatePropertiesUI();
+            renderSVG();
+        }
+
+        function renderAll() {
+            renderLayersList();
+            updatePropertiesUI();
+            renderSVG();
+        }
+
+
+        function renderLayersList() {
+            DOM.layersList.innerHTML = '';
+            
+            if(appState.blobs.length === 0) {
+                DOM.layersList.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">No layers. Add a blob!</p>`;
+                return;
+            }
+
+            appState.blobs.forEach(blob => {
+                const isActive = blob.id === appState.activeBlobId;
+                const el = document.createElement('div');
+                el.className = `layer-item flex items-center justify-between p-2 rounded-lg border border-transparent cursor-pointer transition ${isActive ? 'active' : 'hover:bg-slate-100'}`;
+                el.onclick = (e) => {
+                    // Prevent select if clicking actions
+                    if(!e.target.closest('.layer-action')) {
+                        selectBlob(blob.id);
+                    }
+                };
+
+                el.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <div class="w-6 h-6 rounded bg-gradient-to-br border border-slate-200 shrink-0" 
+                             style="background-image: linear-gradient(135deg, ${blob.colors[0]}, ${blob.colors[blob.colors.length-1] || blob.colors[0]})">
+                        </div>
+                        <span class="text-sm font-medium text-slate-700 truncate">${blob.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0 layer-action">
+                        <button onclick="duplicateBlob('${blob.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-white transition" title="Duplicate">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                        <button onclick="deleteBlob('${blob.id}')" class="p-1.5 text-slate-400 hover:text-red-500 rounded-md hover:bg-white transition" title="Delete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                DOM.layersList.appendChild(el);
+            });
+        }
+
+        function updatePropertiesUI() {
+            const blob = getActiveBlob();
+            
+            if (!blob) {
+                DOM.propsUI.classList.add('hidden');
+                DOM.noSelection.classList.remove('hidden');
+                return;
+            }
+
+            DOM.propsUI.classList.remove('hidden');
+            DOM.noSelection.classList.add('hidden');
+
+            // Sync Input Values silently (without triggering events)
+            
+            // Dimensions
+            DOM.sizeX.value = blob.sizeX;
+            DOM.valSizeX.textContent = blob.sizeX;
+            DOM.sizeY.value = blob.sizeY;
+            DOM.valSizeY.textContent = blob.sizeY;
+            DOM.cx.value = Math.round(blob.cx);
+            DOM.cy.value = Math.round(blob.cy);
+
+            // Shape
+            DOM.points.value = blob.points;
+            DOM.valPoints.textContent = blob.points;
+            DOM.randomness.value = blob.randomness;
+            DOM.valRandomness.textContent = `${blob.randomness}%`;
+            
+            // Appearance
+            DOM.opacity.value = blob.opacity * 100;
+            DOM.valOpacity.textContent = `${Math.round(blob.opacity * 100)}%`;
+            
+            DOM.fillType.value = blob.fillType;
+            if (blob.fillType === 'solid') {
+                DOM.angleContainer.classList.add('hidden');
+                DOM.btnAddColor.classList.add('hidden');
+            } else {
+                DOM.angleContainer.classList.remove('hidden');
+                DOM.btnAddColor.classList.remove('hidden');
+                DOM.angle.value = blob.angle;
+                DOM.valAngle.textContent = `${blob.angle}°`;
+            }
+
+            // Render Colors List
+            DOM.colorsList.innerHTML = '';
+            
+            // Ensure minimum colors based on type
+            let displayColors = [...blob.colors];
+            if(blob.fillType === 'solid') {
+                displayColors = [blob.colors[0]]; // Only show first color
+            } else if (displayColors.length < 2) {
+                displayColors.push('#ffffff'); // Force at least 2 for gradients
+                blob.colors = displayColors;
+            }
+
+            displayColors.forEach((color, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2';
+                
+                const input = document.createElement('input');
+                input.type = 'color';
+                input.value = color;
+                input.oninput = (e) => {
+                    blob.colors[index] = e.target.value;
+                    renderSVG(); // Update immediately
+                    renderLayersList(); // Update layer thumbnail
+                };
+                
+                div.appendChild(input);
+
+                if (blob.fillType !== 'solid' && displayColors.length > 2) {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded transition';
+                    btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                    btn.onclick = () => removeColor(index);
+                    div.appendChild(btn);
+                }
+
+                DOM.colorsList.appendChild(div);
+            });
+        }
+
+        function bindPropertiesListeners() {
+            // Helper to bind a simple range/number input to a blob property
+            const bindProp = (inputEl, displayEl, propName, transform = v=>v, suffix = '') => {
+                inputEl.addEventListener('input', (e) => {
+                    const blob = getActiveBlob();
+                    if (!blob) return;
+                    
+                    let val = parseFloat(e.target.value);
+                    blob[propName] = transform(val);
+                    
+                    if (displayEl) {
+                        displayEl.textContent = val + suffix;
+                    }
+                    
+                    // Special case: if points change, regenerate seeds
+                    if (propName === 'points') {
+                        blob.generateSeeds();
+                    }
+                    
+                    renderSVG();
+                });
+            };
+
+            bindProp(DOM.sizeX, DOM.valSizeX, 'sizeX');
+            bindProp(DOM.sizeY, DOM.valSizeY, 'sizeY');
+            bindProp(DOM.cx, null, 'cx');
+            bindProp(DOM.cy, null, 'cy');
+            bindProp(DOM.points, DOM.valPoints, 'points');
+            bindProp(DOM.randomness, DOM.valRandomness, 'randomness', v=>v, '%');
+            bindProp(DOM.angle, DOM.valAngle, 'angle', v=>v, '°');
+            bindProp(DOM.opacity, DOM.valOpacity, 'opacity', v=>v/100, '%');
+
+            // Select Dropdown
+            DOM.fillType.addEventListener('change', (e) => {
+                const blob = getActiveBlob();
+                if (!blob) return;
+                blob.fillType = e.target.value;
+                updatePropertiesUI();
+                renderSVG();
+            });
+        }
+
+
+        function generateBlobPath(blob) {
+            const rx = blob.sizeX / 2;
+            const ry = blob.sizeY / 2;
+            const points = [];
+
+            // Calculate vertices
+            for (let i = 0; i < blob.points; i++) {
+                const theta = (i / blob.points) * (2 * Math.PI);
+                
+                // Distort based on randomness and seed
+                const offsetRangeX = rx * (blob.randomness / 100);
+                const offsetRangeY = ry * (blob.randomness / 100);
+                
+                const finalRx = rx + (offsetRangeX * blob.seeds[i]);
+                const finalRy = ry + (offsetRangeY * blob.seeds[i]);
+                
+                const x = blob.cx + finalRx * Math.cos(theta);
+                const y = blob.cy + finalRy * Math.sin(theta);
+                points.push({ x, y });
+            }
+
+            // Create smooth SVG path using quadratic Beziers through midpoints
+            let pathD = "";
+            for (let i = 0; i < blob.points; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % blob.points];
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
+                
+                if (i === 0) {
+                    pathD += `M ${midX} ${midY} `;
+                } else {
+                    pathD += `Q ${p1.x} ${p1.y}, ${midX} ${midY} `;
+                }
+            }
+            // Close the path seamlessly back to the first midpoint
+            const firstMidX = (points[0].x + points[1].x) / 2;
+            const firstMidY = (points[0].y + points[1].y) / 2;
+            pathD += `Q ${points[0].x} ${points[0].y}, ${firstMidX} ${firstMidY} Z`;
+
+            return pathD;
+        }
+
+        let currentRawSVG = ''; // Store raw svg for export
+
+        function renderSVG() {
+            // Reverse iterate so top layer in list (index 0) is drawn last (highest Z-index)
+            // Wait, standard DOM: elements declared later are on top. 
+            // So if `blobs` array index 0 is "Layer 1 (Top)", we should iterate backwards.
+            
+            let defs = '';
+            let paths = '';
+
+            // Render from bottom to top
+            for (let i = appState.blobs.length - 1; i >= 0; i--) {
+                const blob = appState.blobs[i];
+                const d = generateBlobPath(blob);
+                const isActive = blob.id === appState.activeBlobId;
+                
+                // Build fill
+                let fillAttr = '';
+                if (blob.fillType === 'solid') {
+                    fillAttr = `fill="${blob.colors[0]}"`;
+                } else {
+                    const gradId = `grad-${blob.id}`;
+                    fillAttr = `fill="url(#${gradId})"`;
+                    
+                    // Build gradient stops
+                    let stops = '';
+                    blob.colors.forEach((col, idx) => {
+                        const offset = (idx / (Math.max(1, blob.colors.length - 1))) * 100;
+                        stops += `<stop offset="${offset}%" stop-color="${col}" />`;
+                    });
+
+                    if (blob.fillType === 'linear') {
+                        // Calc angle
+                        const rad = (blob.angle - 90) * (Math.PI / 180);
+                        const x1 = Math.round(50 + Math.cos(rad) * 50);
+                        const y1 = Math.round(50 + Math.sin(rad) * 50);
+                        const x2 = Math.round(50 - Math.cos(rad) * 50);
+                        const y2 = Math.round(50 - Math.sin(rad) * 50);
+                        
+                        defs += `<linearGradient id="${gradId}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">${stops}</linearGradient>`;
+                    } else if (blob.fillType === 'radial') {
+                        defs += `<radialGradient id="${gradId}" cx="50%" cy="50%" r="50%">${stops}</radialGradient>`;
+                    }
+                }
+
+                // Add path
+                paths += `<path class="blob-path ${isActive ? 'selected' : ''}" data-id="${blob.id}" d="${d}" ${fillAttr} opacity="${blob.opacity}" />`;
+            }
+
+            const svgStr = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${appState.canvasW} ${appState.canvasH}" width="${appState.canvasW}" height="${appState.canvasH}">
+    <defs>${defs}</defs>
+    <!-- Background is transparent -->
+    ${paths}
+</svg>`.trim();
+
+            DOM.svgContainer.innerHTML = svgStr;
+            
+            // Clean version for export (without selection classes)
+            currentRawSVG = svgStr.replace(/class="blob-path selected"/g, '').replace(/class="blob-path "/g, '').replace(/data-id="[^"]*"/g, '');
+        }
+
+
+        function setupSVGDrag() {
+            let isDragging = false;
+            let dragTarget = null;
+            let startMouse = {x:0, y:0};
+            let startBlobPos = {x:0, y:0};
+
+            // Get SVG coordinates
+            function getMousePosition(evt) {
+                const svg = DOM.svgContainer.querySelector('svg');
+                if(!svg) return {x:0, y:0};
+                const CTM = svg.getScreenCTM();
+                return {
+                    x: (evt.clientX - CTM.e) / CTM.a,
+                    y: (evt.clientY - CTM.f) / CTM.d
+                };
+            }
+
+            DOM.svgContainer.addEventListener('mousedown', (e) => {
+                const target = e.target;
+                if (target.tagName === 'path') {
+                    const id = target.getAttribute('data-id');
+                    selectBlob(id); // Select it
+                    
+                    const blob = getActiveBlob();
+                    if(blob) {
+                        isDragging = true;
+                        dragTarget = blob;
+                        startMouse = getMousePosition(e);
+                        startBlobPos = { x: blob.cx, y: blob.cy };
+                    }
+                } else {
+                    // Clicked empty canvas space
+                    selectBlob(null);
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging && dragTarget) {
+                    const currentMouse = getMousePosition(e);
+                    const dx = currentMouse.x - startMouse.x;
+                    const dy = currentMouse.y - startMouse.y;
+                    
+                    dragTarget.cx = startBlobPos.x + dx;
+                    dragTarget.cy = startBlobPos.y + dy;
+                    
+                    // Update property inputs if visible
+                    if (appState.activeBlobId === dragTarget.id) {
+                        DOM.cx.value = Math.round(dragTarget.cx);
+                        DOM.cy.value = Math.round(dragTarget.cy);
+                    }
+                    
+                    renderSVG(); // Fast redraw
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                dragTarget = null;
+            });
+        }
+
+
+        function showToast(msg) {
+            DOM.toastText.textContent = msg;
+            DOM.toast.style.opacity = '1';
+            DOM.toast.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                DOM.toast.style.opacity = '0';
+                DOM.toast.style.transform = 'translateY(1rem)';
+            }, 3000);
+        }
+
+        function downloadFile(url, filename) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportSVG() {
+            // Remove 'selected' styling before export
+            const blob = new Blob([currentRawSVG], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            downloadFile(url, 'blob-composition.svg');
+            URL.revokeObjectURL(url);
+            showToast("SVG Downloaded!");
+        }
+
+        function exportPNG() {
+            const canvas = document.createElement('canvas');
+            canvas.width = appState.canvasW;
+            canvas.height = appState.canvasH;
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            const encodedSvg = btoa(unescape(encodeURIComponent(currentRawSVG)));
+            const dataUrl = `data:image/svg+xml;base64,${encodedSvg}`;
+            
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, appState.canvasW, appState.canvasH);
+                const pngUrl = canvas.toDataURL('image/png');
+                downloadFile(pngUrl, 'blob-composition.png');
+            };
+            img.src = dataUrl;
+            showToast("PNG Downloaded!");
+        }
+
+        function copySVG() {
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = currentRawSVG;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("SVG Code Copied!");
+            } catch (err) {
+                console.error('Failed to copy text', err);
+            }
+            document.body.removeChild(tempTextArea);
+        }
+
+        // Start App
+        init();
+
+    </script>
+</body>
+</html>
