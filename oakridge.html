@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oakridge PD - Terminal OS v4.1 (Case #97-0402)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --win-bg: #008080;
+            --win-gray: #c0c0c0;
+            --win-light: #ffffff;
+            --win-dark: #808080;
+            --win-black: #000000;
+            --win-blue: #000080;
+            --win-blue-light: #1084d0;
+        }
+
+        body {
+            font-family: 'Courier Prime', monospace;
+            background-color: var(--win-bg);
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .font-pixel { font-family: 'VT323', monospace; }
+        .font-sans-retro { font-family: 'Pixelify Sans', sans-serif; }
+
+        /* Windows 95 bevel borders */
+        .win-outset {
+            border-top: 2px solid var(--win-light);
+            border-left: 2px solid var(--win-light);
+            border-bottom: 2px solid var(--win-black);
+            border-right: 2px solid var(--win-black);
+            box-shadow: inset 1px 1px 0px #dfdfdf, inset -1px -1px 0px #808080;
+        }
+
+        .win-inset {
+            border-top: 2px solid var(--win-dark);
+            border-left: 2px solid var(--win-dark);
+            border-bottom: 2px solid var(--win-light);
+            border-right: 2px solid var(--win-light);
+            background-color: #fff;
+        }
+
+        .win-button {
+            border-top: 2px solid var(--win-light);
+            border-left: 2px solid var(--win-light);
+            border-bottom: 2px solid var(--win-black);
+            border-right: 2px solid var(--win-black);
+            background-color: var(--win-gray);
+            box-shadow: inset 1px 1px 0px #dfdfdf, inset -1px -1px 0px #808080;
+        }
+
+        .win-button:active {
+            border-top: 2px solid var(--win-black);
+            border-left: 2px solid var(--win-black);
+            border-bottom: 2px solid var(--win-light);
+            border-right: 2px solid var(--win-light);
+            box-shadow: none;
+            padding-top: 2px;
+            padding-left: 2px;
+        }
+
+        /* CRT Effects */
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .crt-vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.6);
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* Glitch animations */
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-3px, 3px); }
+            40% { transform: translate(-3px, -3px); filter: invert(0.8); }
+            60% { transform: translate(3px, 3px); }
+            80% { transform: translate(3px, -3px); }
+            100% { transform: translate(0); }
+        }
+
+        .glitch {
+            animation: glitch-anim 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+
+        /* Scrollbar Retro */
+        ::-webkit-scrollbar { width: 16px; height: 16px; }
+        ::-webkit-scrollbar-track { background: var(--win-gray); border: 1px solid var(--win-dark); }
+        ::-webkit-scrollbar-thumb {
+            background: var(--win-gray);
+            border-top: 2px solid var(--win-light);
+            border-left: 2px solid var(--win-light);
+            border-bottom: 2px solid var(--win-black);
+            border-right: 2px solid var(--win-black);
+        }
+
+        /* Custom SVG Filters */
+        .symbol-glow {
+            filter: drop-shadow(0px 0px 5px rgba(255,0,0,0.8));
+        }
+    </style>
+</head>
+<body class="select-none h-screen w-screen overflow-hidden text-sm">
+    <div id="crtOverlay" class="crt-overlay"></div>
+    <div class="crt-vignette"></div>
+
+    <!-- MAIN DESKTOP CONTAINER -->
+    <div id="desktop" class="relative w-full h-[calc(100vh-40px)] p-4 flex flex-col flex-wrap content-start gap-6">
+
+        <!-- Desktop Icon: Case File -->
+        <div onclick="openWindow('win-casefile')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-yellow-500 fill-current" viewBox="0 0 24 24">
+                    <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">Case_97-0402</span>
+        </div>
+
+        <!-- Desktop Icon: Evidence Photos -->
+        <div onclick="openWindow('win-photos')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-blue-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">Evidence_Photos</span>
+        </div>
+
+        <!-- Desktop Icon: Mail Express -->
+        <div onclick="openWindow('win-mail')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-red-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">Mail_Express</span>
+        </div>
+
+        <!-- Desktop Icon: Oakridge Net (Browser) -->
+        <div onclick="openWindow('win-browser')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-green-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">Oakridge_Net</span>
+        </div>
+
+        <!-- Desktop Icon: Officer Notebook (Officer Speaks Here!) -->
+        <div onclick="openWindow('win-notebook')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group relative">
+            <div id="notebookBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border border-white animate-bounce">!</div>
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-amber-200 fill-current" viewBox="0 0 24 24">
+                    <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+            </div>
+            <span class="text-yellow-300 font-bold text-xs font-sans-retro text-center bg-black/70 px-1 rounded group-hover:bg-blue-800">Officer_Notebook</span>
+        </div>
+
+        <!-- Desktop Icon: Encrypted Disk -->
+        <div onclick="openWindow('win-encrypted')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg id="lockIcon" class="w-10 h-10 text-red-500 fill-current" viewBox="0 0 24 24">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">RESTRICTED_EVIDENCE</span>
+        </div>
+
+        <!-- NEW Desktop Icon: Newspaper Microfilm Archive -->
+        <div onclick="openWindow('win-archives')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-gray-300 fill-current" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2zm0 8H7v-2h10v2z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">Town_Archives</span>
+        </div>
+
+        <!-- NEW Desktop Icon: Dispatch Tapes & Wiretaps -->
+        <div onclick="openWindow('win-audio')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-purple-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">Dispatch_Tapes</span>
+        </div>
+
+        <!-- NEW Desktop Icon: GIS Town Map -->
+        <div onclick="openWindow('win-map')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-teal-300 fill-current" viewBox="0 0 24 24">
+                    <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">Oakridge_Map</span>
+        </div>
+
+        <!-- NEW Desktop Icon: NetChat IRC -->
+        <div onclick="openWindow('win-irc')" class="w-20 flex flex-col items-center gap-1 cursor-pointer group">
+            <div class="w-12 h-12 flex items-center justify-center p-1 group-hover:bg-blue-900/30 rounded">
+                <svg class="w-10 h-10 text-emerald-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+                </svg>
+            </div>
+            <span class="text-white text-xs font-sans-retro text-center bg-black/50 px-1 rounded group-hover:bg-blue-800">IRC_NetChat</span>
+        </div>
+
+    </div>
+
+    <!-- WINDOW 1: CASE FILE -->
+    <div id="win-casefile" class="hidden absolute top-12 left-16 w-[580px] h-[460px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">
+                <span class="text-xs">📄</span> Official Police Report #97-0402
+            </span>
+            <button onclick="closeWindow('win-casefile')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto win-inset m-2 bg-slate-50 text-slate-900 text-xs font-mono">
+            <div class="border-b-2 border-black pb-2 mb-4 flex justify-between">
+                <div>
+                    <p class="font-bold text-sm">OAKRIDGE POLICE DEPARTMENT</p>
+                    <p>MISSING PERSONS DIVISION</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-red-700">STATUS: OPEN / UNRESOLVED</p>
+                    <p>Date Filed: Oct 12, 1997</p>
+                </div>
+            </div>
+
+            <p class="mb-2"><strong>VICTIM:</strong> Clara Vance (Age: 16)</p>
+            <p class="mb-2"><strong>HEIGHT/WEIGHT:</strong> 5'4" / 115 lbs | <strong>HAIR:</strong> Brown</p>
+            <p class="mb-4"><strong>LAST SEEN:</strong> Oct 11, 1997 near Old Miller's Mill, Route 9</p>
+
+            <h4 class="font-bold bg-slate-300 p-1 mb-2">INCIDENT SUMMARY</h4>
+            <p class="mb-3 leading-relaxed">
+                Subject vanished after walking home from Oakridge High School. Personal backpack recovered near Blackwood Ridge trail. No signs of struggle or physical abduction found at the primary perimeter.
+            </p>
+
+            <h4 class="font-bold bg-slate-300 p-1 mb-2">PRIMARY WITNESS STATEMENT (MOTHER: ELEANOR VANCE)</h4>
+            <p class="mb-3 italic bg-yellow-50 p-2 border-l-2 border-amber-500">
+                "Clara was scared for two weeks before she vanished. She said someone was knocking on her window at 3:33 AM every morning. She said they smelled like woodsmoke and damp earth. Sheriff Miller told us it was just teenagers playing pranks, but her room smelled like rot."
+            </p>
+
+            <h4 class="font-bold bg-slate-300 p-1 mb-2">EVIDENCE COLLECTED ON SITE</h4>
+            <ul class="list-disc pl-5 space-y-1 mb-4">
+                <li class="cursor-pointer hover:text-blue-700 underline" onclick="triggerClue('symbol_tree', 'Found mention of weird tree symbols in police logs.')">
+                    1x Wooden pendant with carved spiral (Item #01)
+                </li>
+                <li class="cursor-pointer hover:text-blue-700 underline" onclick="triggerClue('digital_camera', 'Clara left her digital camera behind in the ravine.')">
+                    1x Sony Mavica Digital Camera with floppy disk intact (Item #02)
+                </li>
+                <li class="cursor-pointer hover:text-blue-700 underline" onclick="triggerClue('passcode_hint', 'Sheriff Miller recorded security key code: 1916.')">
+                    Note attached by Chief Miller: "Do not search Old Vault. Keycode reset to 1916."
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- WINDOW 2: EVIDENCE PHOTOS -->
+    <div id="win-photos" class="hidden absolute top-20 left-32 w-[600px] h-[480px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">🖼️ Evidence Photo Viewer</span>
+            <button onclick="closeWindow('win-photos')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-2 flex-1 flex gap-2 overflow-hidden">
+            <!-- Sidebar thumbnails -->
+            <div class="w-1/3 win-inset p-1 flex flex-col gap-2 overflow-y-auto bg-slate-200">
+                <div onclick="selectPhoto('photo1')" class="p-2 bg-white hover:bg-blue-200 cursor-pointer border flex flex-col items-center">
+                    <span class="text-[10px] font-bold">IMG_001.JPG</span>
+                    <span class="text-[9px] text-gray-500">Clara Vance (Portrait)</span>
+                </div>
+                <div onclick="selectPhoto('photo2')" class="p-2 bg-white hover:bg-blue-200 cursor-pointer border flex flex-col items-center">
+                    <span class="text-[10px] font-bold">IMG_002.JPG</span>
+                    <span class="text-[9px] text-gray-500">Old Mill Woods</span>
+                </div>
+                <div onclick="selectPhoto('photo3')" class="p-2 bg-white hover:bg-blue-200 cursor-pointer border flex flex-col items-center">
+                    <span class="text-[10px] font-bold">IMG_003.JPG</span>
+                    <span class="text-[9px] text-gray-500">Carved Tree Symbol</span>
+                </div>
+                <div onclick="selectPhoto('photo4')" class="p-2 bg-red-100 hover:bg-red-200 cursor-pointer border border-red-400 flex flex-col items-center">
+                    <span class="text-[10px] font-bold text-red-700">CORRUPT_04.JPG</span>
+                    <span class="text-[9px] text-red-500">Recovered Floppy Disk</span>
+                </div>
+                <div onclick="selectPhoto('photo5')" class="p-2 bg-white hover:bg-blue-200 cursor-pointer border flex flex-col items-center">
+                    <span class="text-[10px] font-bold">IMG_005.JPG</span>
+                    <span class="text-[9px] text-gray-500">Bedroom Window Exterior</span>
+                </div>
+                <div onclick="selectPhoto('photo6')" class="p-2 bg-white hover:bg-blue-200 cursor-pointer border flex flex-col items-center">
+                    <span class="text-[10px] font-bold">IMG_006.JPG</span>
+                    <span class="text-[9px] text-gray-500">Chief's Secret Ledger</span>
+                </div>
+                <div onclick="selectPhoto('photo7')" class="p-2 bg-white hover:bg-blue-200 cursor-pointer border flex flex-col items-center">
+                    <span class="text-[10px] font-bold">IMG_007.JPG</span>
+                    <span class="text-[9px] text-gray-500">Catacomb Entrance</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 3: MAIL EXPRESS -->
+    <div id="win-mail" class="hidden absolute top-16 left-28 w-[640px] h-[450px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">✉️ Mail Express v2.1 - Inbox (Detective Ward)</span>
+            <button onclick="closeWindow('win-mail')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="flex-1 flex flex-col p-2 gap-2">
+            <div class="win-inset h-36 overflow-y-auto bg-white">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-gray-200 sticky top-0 border-b">
+                        <tr>
+                            <th class="p-1 border-r">From</th>
+                            <th class="p-1 border-r">Subject</th>
+                            <th class="p-1">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr onclick="readEmail('email1')" class="hover:bg-blue-600 hover:text-white cursor-pointer border-b">
+                            <td class="p-1 border-r">Sheriff Miller</td>
+                            <td class="p-1 border-r font-bold">RE: Case #97-0402 - Close the file</td>
+                            <td class="p-1">Oct 14, 1997</td>
+                        </tr>
+                        <tr onclick="readEmail('email2')" class="hover:bg-blue-600 hover:text-white cursor-pointer border-b">
+                            <td class="p-1 border-r">Emily S. (Clara's Friend)</td>
+                            <td class="p-1 border-r">PLEASE HELP HER - They took her</td>
+                            <td class="p-1">Oct 13, 1997</td>
+                        </tr>
+                        <tr onclick="readEmail('email3')" class="hover:bg-blue-600 hover:text-white cursor-pointer border-b bg-red-50">
+                            <td class="p-1 border-r text-red-700 font-bold">UNKNOWN_HOST</td>
+                            <td class="p-1 border-r text-red-700 font-bold">THE BLOOD HARVEST BEGINS AT MIDNIGHT</td>
+                            <td class="p-1 text-red-700">Oct 15, 1997</td>
+                        </tr>
+                        <tr onclick="readEmail('email4')" class="hover:bg-blue-600 hover:text-white cursor-pointer border-b">
+                            <td class="p-1 border-r">Dr. Aris (Coroner)</td>
+                            <td class="p-1 border-r">Lab Results: Soil Sample #042</td>
+                            <td class="p-1">Oct 12, 1997</td>
+                        </tr>
+                        <tr onclick="readEmail('email5')" class="hover:bg-blue-600 hover:text-white cursor-pointer border-b">
+                            <td class="p-1 border-r">Deputy Evans</td>
+                            <td class="p-1 border-r font-bold">Do not trust Miller - Look at 1970 newspaper</td>
+                            <td class="p-1">Oct 11, 1997</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="emailBody" class="win-inset flex-1 p-3 bg-slate-50 font-mono overflow-y-auto text-xs">
+                <p class="text-gray-500">Select an email to view its contents.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 4: NET EXPLORER (OAKRIDGE NET FORUM) -->
+    <div id="win-browser" class="hidden absolute top-8 left-20 w-[680px] h-[500px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">🌐 Oakridge Net Explorer 3.0</span>
+            <button onclick="closeWindow('win-browser')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <!-- Browser Navbar -->
+        <div class="p-1 flex items-center gap-2 border-b bg-[var(--win-gray)] text-xs">
+            <span class="font-bold">Address:</span>
+            <input type="text" value="http://www.oakridge-community.org/bbs/alt.folklore.oakridge" readonly class="win-inset flex-1 px-2 py-1 bg-white font-mono text-slate-800">
+            <button class="win-button px-2 py-1 font-bold">Go</button>
+        </div>
+        <!-- Browser Page Content -->
+        <div class="p-4 flex-1 overflow-y-auto bg-stone-100 font-serif text-slate-900">
+            <div class="bg-amber-100 border-2 border-amber-800 p-3 mb-4 text-center shadow">
+                <h2 class="text-xl font-bold font-pixel text-amber-900 tracking-wider">OAKRIDGE COMMUNITY BULLETIN BOARD</h2>
+                <p class="text-xs italic text-amber-800">"Preserving local history and town gossip since 1994"</p>
+            </div>
+
+            <!-- Forum Thread -->
+            <div class="border border-stone-400 bg-white mb-4 shadow-sm">
+                <div class="bg-stone-300 p-2 font-bold text-xs flex justify-between border-b">
+                    <span>THREAD: The 27-Year Cycle & The Horned Society</span>
+                    <span>Posted: Sep 28, 1997</span>
+                </div>
+                <div class="p-3 text-xs space-y-3">
+                    <p class="font-semibold text-blue-900">User: OldTimer_54</p>
+                    <p>
+                        Does anyone remember 1970? Another young girl went missing near the mill back then—Sarah Jenkins. And before that, in 1943, David Miller's brother disappeared in the deep woods. It happens every 27 years without fail.
+                    </p>
+                    <div class="bg-red-50 p-2 border-l-4 border-red-600 my-2">
+                        <p class="font-bold text-red-900">User: CultWatcher97 wrote:</p>
+                        <p class="italic text-red-800 cursor-pointer" onclick="triggerClue('cult_lore', 'Discovered lore on the Underground Cult Ritual.')">
+                            "It's not a mystery. It's the 'Order of the Pale Root'. They meet in the subterranean catacombs underneath Old Miller's Mill. They sacrifice a pure soul every cycle to keep the soil fertile and maintain political control over Oakridge town council!"
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thread 2 -->
+            <div class="border border-stone-400 bg-white shadow-sm">
+                <div class="bg-stone-300 p-2 font-bold text-xs flex justify-between border-b">
+                    <span>THREAD: Strange chants heard at Night</span>
+                    <span>Posted: Oct 02, 1997</span>
+                </div>
+                <div class="p-3 text-xs space-y-2">
+                    <p class="font-semibold text-blue-900">User: NightHiker</p>
+                    <p>
+                        I was camping near Blackwood Ridge two nights ago. Saw red torches burning down near the creek bed. A group of robes chanting: <em>"Sanguis terrae, anima pro pace"</em>. They were carrying something wrapped in white linen...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 5: OFFICER NOTEBOOK (Protagonist's commentary channel) -->
+    <div id="win-notebook" class="hidden absolute top-10 right-10 w-[420px] h-[520px] win-outset bg-amber-50 flex flex-col z-20 shadow-2xl border-2 border-amber-800">
+        <div class="bg-amber-900 text-amber-100 font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">📝 Officer Ward's Case Notebook</span>
+            <button onclick="closeWindow('win-notebook')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-3 bg-amber-100 border-b border-amber-300 text-amber-900 text-xs font-semibold flex justify-between">
+            <span>Detective Thomas Ward - Badge #402</span>
+            <span id="clueCounter" class="bg-amber-800 text-white px-2 py-0.5 rounded-full">Clues: 0/10</span>
+        </div>
+        <!-- Notebook Log Container -->
+        <div id="notebookLogs" class="p-4 flex-1 overflow-y-auto space-y-3 font-mono text-xs text-amber-950 leading-relaxed">
+            <div class="italic text-gray-500 border-b border-amber-200 pb-2">
+                "I shouldn't be writing this down on official records, but something is wrong with the Clara Vance case. Chief Miller is trying to cover it up. My older sister Sarah vanished in this town back in 1970... I need to gather evidence before they wipe this workstation."
+            </div>
+            <!-- Dynamic entries inject here -->
+        </div>
+        <div class="p-2 border-t border-amber-300 bg-amber-200/50 flex gap-1">
+    <!-- WINDOW 8: NEWSPAPER ARCHIVE (OAKRIDGE HERALD) -->
+    <div id="win-archives" class="hidden absolute top-14 left-24 w-[650px] h-[480px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">🗞️ Oakridge Herald - Digital Microfilm Archives (1916-1997)</span>
+            <button onclick="closeWindow('win-archives')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-2 flex-1 flex gap-2 overflow-hidden">
+            <div class="w-1/3 win-inset p-1 bg-stone-200 text-xs flex flex-col gap-2">
+                <button onclick="showArchive('art1943')" class="p-2 bg-white hover:bg-amber-100 border text-left font-serif">
+                    <p class="font-bold text-[11px]">OCT 18, 1943</p>
+                    <p class="text-[10px] text-gray-600">Boy, 14, Vanishes Near Ridge</p>
+                </button>
+                <button onclick="showArchive('art1970')" class="p-2 bg-white hover:bg-amber-100 border text-left font-serif">
+                    <p class="font-bold text-[11px]">OCT 12, 1970</p>
+                    <p class="text-[10px] text-gray-600">Sarah Jenkins Missing in Woods</p>
+                </button>
+                <button onclick="showArchive('art1997')" class="p-2 bg-white hover:bg-amber-100 border text-left font-serif">
+                    <p class="font-bold text-[11px]">OCT 12, 1997</p>
+                    <p class="text-[10px] text-gray-600">Clara Vance Search Enters Day 2</p>
+                </button>
+            </div>
+            <div id="archiveDisplay" class="w-2/3 win-inset p-4 bg-amber-50 font-serif text-slate-900 overflow-y-auto text-xs leading-relaxed border border-stone-300">
+                <p class="text-gray-500 italic">Select a microfilm issue from the archive index on the left...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 9: DISPATCH TAPES & AUDIOTAPES -->
+    <div id="win-audio" class="hidden absolute top-28 left-40 w-[540px] h-[380px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">🎙️ Oakridge PD Audio Lab v1.0</span>
+            <button onclick="closeWindow('win-audio')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-3 flex-1 flex flex-col gap-3 win-inset bg-zinc-900 text-green-400 font-mono text-xs">
+            <div class="border border-green-800 p-2 bg-black flex justify-between items-center">
+                <span id="audioTrackName">TRACK: NONE LOADED</span>
+                <span id="audioTime" class="text-xs text-green-600">00:00 / 00:00</span>
+            </div>
+            <div class="flex gap-2 justify-center my-1">
+                <button onclick="playAudioTape('tape1')" class="win-button px-3 py-1 text-black font-bold text-xs">Tape 1: 911 Call (Oct 11)</button>
+                <button onclick="playAudioTape('tape2')" class="win-button px-3 py-1 text-black font-bold text-xs">Tape 2: Chief Interrogation</button>
+                <button onclick="playAudioTape('tape3')" class="win-button px-3 py-1 text-black font-bold text-xs">Tape 3: Secret Council Wiretap</button>
+            </div>
+            <div id="audioTranscript" class="flex-1 p-3 border border-green-900 bg-black/90 overflow-y-auto text-[11px] leading-normal text-green-300">
+                <p class="text-gray-500 italic">Select an audio recording above to process playback waveform...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 10: OAKRIDGE MAP & GIS -->
+    <div id="win-map" class="hidden absolute top-16 left-36 w-[620px] h-[460px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">🗺️ Oakridge County GIS Map Utility (v2.0)</span>
+            <button onclick="closeWindow('win-map')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-2 flex-1 flex flex-col gap-2">
+            <div class="win-inset bg-stone-900 relative h-64 border border-teal-700 overflow-hidden flex items-center justify-center">
+                <!-- Vector-style SVG Map -->
+                <svg class="w-full h-full text-teal-500" viewBox="0 0 500 300">
+                    <rect width="500" height="300" fill="#0f172a" />
+                    <!-- River -->
+                    <path d="M0,100 Q150,120 250,200 T500,220" fill="none" stroke="#1e3a8a" stroke-width="24"/>
+                    <!-- Roads -->
+                    <path d="M50,0 L50,300 M0,150 L500,150 M120,50 L400,280" fill="none" stroke="#334155" stroke-width="4" stroke-dasharray="4,4"/>
+                    
+                    <!-- Clickable Hotspots -->
+                    <!-- Vance House -->
+                    <g onclick="inspectMapPoint('vance_house')" class="cursor-pointer group">
+                        <circle cx="80" cy="110" r="8" fill="#ef4444" class="animate-ping opacity-75"/>
+                        <circle cx="80" cy="110" r="6" fill="#f87171" />
+                        <text x="92" y="114" fill="#cbd5e1" font-size="10" font-family="monospace">Vance Residence</text>
+                    </g>
+                    <!-- Old Mill -->
+                    <g onclick="inspectMapPoint('old_mill')" class="cursor-pointer group">
+                        <circle cx="280" cy="220" r="6" fill="#f59e0b"/>
+                        <text x="292" y="224" fill="#cbd5e1" font-size="10" font-family="monospace">Old Miller's Mill</text>
+                    </g>
+                    <!-- Police Dept -->
+                    <g onclick="inspectMapPoint('police_dept')" class="cursor-pointer group">
+                        <circle cx="150" cy="140" r="6" fill="#3b82f6"/>
+                        <text x="162" y="144" fill="#cbd5e1" font-size="10" font-family="monospace">Police Precinct</text>
+                    </g>
+                    <!-- Blackwood Ridge -->
+                    <g onclick="inspectMapPoint('blackwood_ridge')" class="cursor-pointer group">
+                        <circle cx="420" cy="80" r="6" fill="#10b981"/>
+                        <text x="330" y="84" fill="#cbd5e1" font-size="10" font-family="monospace">Blackwood Ridge Sinkhole</text>
+                    </g>
+                </svg>
+            </div>
+            <div id="mapDetails" class="win-inset p-3 bg-slate-900 text-teal-300 font-mono text-xs flex-1 overflow-y-auto">
+                <p class="text-teal-600">Click a vector marker on the GIS grid to retrieve geographical survey data...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 11: NETCHAT IRC CHANNEL -->
+    <div id="win-irc" class="hidden absolute top-20 left-20 w-[580px] h-[420px] win-outset bg-[var(--win-gray)] flex flex-col z-10 shadow-2xl">
+        <div class="bg-[var(--win-blue)] text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">💬 NetChat v0.9b - #oakridge-dark</span>
+            <button onclick="closeWindow('win-irc')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-2 flex-1 flex gap-2 overflow-hidden">
+            <div id="ircLog" class="win-inset flex-1 p-3 bg-black text-green-400 font-mono text-xs overflow-y-auto space-y-2">
+                <p class="text-gray-500">*** Connected to irc.oakridge-net.org:6667 (#oakridge-dark)</p>
+                <p><span class="text-yellow-400">&lt;Watcher97&gt;</span> Anyone online? They closed off the woods near Route 9 tonight.</p>
+                <p><span class="text-blue-400">&lt;DeepOak&gt;</span> Miller deployed deputies around the mill. No citizens allowed past 9 PM.</p>
+                <p><span class="text-red-500 font-bold">&lt;RootDweller&gt;</span> THE MOON IS RED. THE PACT REQUIRES BLOOD.</p>
+            </div>
+            <div class="w-32 win-inset p-2 bg-gray-200 text-xs font-mono">
+                <p class="font-bold border-b mb-1">USERS (4)</p>
+                <p class="text-red-700">@RootDweller</p>
+                <p>Watcher97</p>
+                <p>DeepOak</p>
+                <p class="text-gray-400 italic">Clara_V (offline)</p>
+            </div>
+        </div>
+        <div class="p-1 bg-[var(--win-gray)] border-t flex gap-1">
+            <input id="ircInput" type="text" placeholder="Type chat message..." class="flex-1 px-2 py-1 win-inset text-xs font-mono">
+            <button onclick="sendIrcMessage()" class="win-button px-3 py-1 font-bold text-xs">Send</button>
+        </div>
+    </div>
+
+    <!-- WINDOW 6: RESTRICTED ENCRYPTED DISK -->
+    <div id="win-encrypted" class="hidden absolute top-24 left-44 w-[480px] h-[360px] win-outset bg-[var(--win-gray)] flex flex-col z-30 shadow-2xl">
+        <div class="bg-red-900 text-white font-bold p-1 flex justify-between items-center cursor-move handle">
+            <span class="flex items-center gap-2">🔒 RESTRICTED VAULT - ACCESS CONTROL</span>
+            <button onclick="closeWindow('win-encrypted')" class="win-button px-2 py-0 text-black font-bold text-xs bg-[var(--win-gray)]">X</button>
+        </div>
+        <div class="p-6 flex-1 flex flex-col items-center justify-center bg-zinc-900 text-red-500 font-mono text-center">
+            <svg class="w-16 h-16 text-red-600 mb-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 002-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <h3 class="text-lg font-bold mb-2">CLASSIFIED ARCHIVE FILE #97-X</h3>
+            <p class="text-xs text-zinc-400 mb-4">Enter 4-Digit Vault Override Key (Found in Police Case File notes):</p>
+
+            <div class="flex gap-2 mb-4">
+                <input id="vaultPin" type="password" maxlength="4" placeholder="----" class="w-28 text-center text-xl font-bold bg-black text-red-500 border border-red-700 p-2 rounded tracking-widest outline-none">
+                <button onclick="unlockVault()" class="win-button px-4 py-2 font-bold text-black bg-gray-300">UNLOCK</button>
+            </div>
+            <p id="vaultMessage" class="text-xs font-bold text-yellow-400 h-4"></p>
+        </div>
+    </div>
+
+    <!-- WINDOW 7: CULT HORROR CLIMAX MODAL (Triggered upon unlock) -->
+    <div id="win-climax" class="hidden fixed inset-0 bg-black/90 z-[10000] flex items-center justify-center p-4">
+        <div class="w-[650px] bg-red-950 border-4 border-red-600 p-6 text-red-100 font-mono flex flex-col gap-4 shadow-[0_0_50px_rgba(255,0,0,0.5)]">
+            <div class="flex items-center gap-3 border-b border-red-700 pb-3">
+                <div class="w-6 h-6 bg-red-600 rounded-full animate-ping"></div>
+                <h2 class="text-xl font-bold text-red-500 font-pixel tracking-widest">CRITICAL SYSTEM BREACH - RECORDING FOUND</h2>
+            </div>
+
+            <div class="win-inset bg-black p-4 border-red-800 text-xs space-y-3 h-64 overflow-y-auto text-red-400">
+                <p class="text-yellow-400 font-bold">[AUDIO TRANSCRIPT DECODED - OCT 12, 1997 - 03:33 AM]</p>
+                <p><strong>VOICE 1 (Sheriff Miller):</strong> "Is the girl ready in the basin?"</p>
+                <p><strong>VOICE 2 (Masked Chanted):</strong> "She is bound upon the root, Chief. The harvest requires her blood before the blood moon sets."</p>
+                <p><strong>VOICE 1 (Sheriff Miller):</strong> "What about Detective Thomas Ward? He's asking questions around town."</p>
+                <p><strong>VOICE 2:</strong> "Ward is reading the files right now on the terminal. He thinks he is investigating... he doesn't realize he is the final sacrifice to seal the pact."</p>
+                <div class="p-3 bg-red-900/50 border border-red-500 text-white font-bold my-2 animate-pulse text-sm text-center">
+                    SYSTEM ALERT: DOOR LOCK SYSTEM ACTIVATED IN DETECTIVE ROOM 402.
+                </div>
+                <p class="text-gray-300 italic">
+                    [Heavy footsteps echoing outside your office door... Doorknob slowly rattling...]
+                </p>
+            </div>
+
+            <button onclick="finishGame()" class="w-full py-3 bg-red-700 hover:bg-red-600 text-white font-bold tracking-widest border-2 border-white rounded font-pixel text-lg uppercase transition-all">
+                Look Behind You...
+            </button>
+        </div>
+    </div>
+
+    <!-- BOTTOM TASKBAR -->
+    <div class="fixed bottom-0 left-0 w-full h-10 bg-[var(--win-gray)] win-outset flex items-center justify-between px-2 z-50">
+        <!-- Start Button -->
+        <div class="relative">
+            <button onclick="toggleStartMenu()" class="win-button flex items-center gap-2 px-3 py-1 font-bold text-xs">
+                <div class="w-4 h-4 bg-gradient-to-br from-red-500 via-green-500 to-blue-500 font-black text-[9px] text-white flex items-center justify-center">田</div>
+                Start
+            </button>
+            <!-- Start Menu Popover -->
+            <div id="startMenu" class="hidden absolute bottom-10 left-0 w-52 win-outset bg-[var(--win-gray)] p-1 z-50 flex flex-col gap-1 shadow-2xl">
+                <div class="bg-[var(--win-blue)] text-white font-bold p-2 text-xs flex items-center gap-2">
+                    <span>Oakridge PD OS</span>
+                </div>
+                <button onclick="openWindow('win-casefile'); toggleStartMenu()" class="text-left px-3 py-2 hover:bg-blue-800 hover:text-white text-xs flex items-center gap-2">
+                    📄 Case Files
+                </button>
+                <button onclick="openWindow('win-photos'); toggleStartMenu()" class="text-left px-3 py-2 hover:bg-blue-800 hover:text-white text-xs flex items-center gap-2">
+                    🖼️ Evidence Photos
+                </button>
+                <button onclick="openWindow('win-notebook'); toggleStartMenu()" class="text-left px-3 py-2 hover:bg-blue-800 hover:text-white text-xs flex items-center gap-2">
+                    📝 Officer Notebook
+                </button>
+                <hr class="border-gray-400">
+                <button onclick="playCreepySting()" class="text-left px-3 py-2 hover:bg-blue-800 hover:text-white text-xs flex items-center gap-2">
+                    🔊 Test Audio Synth
+                </button>
+            </div>
+        </div>
+
+        <!-- Taskbar Windows List -->
+        <div id="taskbarItems" class="flex-1 flex gap-2 px-4 overflow-x-auto">
+            <!-- Active tasks dynamically pop up here -->
+        </div>
+
+        <!-- System Tray -->
+        <div class="win-inset px-3 py-1 text-xs font-mono flex items-center gap-3">
+            <span id="audioStatus" onclick="toggleAudio()" class="cursor-pointer" title="Toggle Synth Sound Effect">🔊 Sound On</span>
+            <span id="crtClock" class="font-bold">03:33 AM</span>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT GAME LOGIC -->
+    <script>
+        let cluesDiscovered = new Set();
+        let audioEnabled = true;
+        let audioCtx = null;
+        let activeToneOsc = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+            if (!audioEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) { console.log(e); }
+        }
+
+        function playCreepySting() {
+            if (!audioEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(35, audioCtx.currentTime + 1.5);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.5);
+            } catch (e) { console.log(e); }
+        }
+
+        let highestZ = 100;
+
+        function openWindow(id) {
+            playBeep(600, 'square', 0.05);
+            const win = document.getElementById(id);
+            if (win) {
+                win.classList.remove('hidden');
+                highestZ += 1;
+                win.style.zIndex = highestZ;
+            }
+        }
+
+        function closeWindow(id) {
+            playBeep(300, 'square', 0.05);
+            const win = document.getElementById(id);
+            if (win) {
+                win.classList.add('hidden');
+            }
+        }
+
+        function toggleStartMenu() {
+            playBeep(500, 'sine', 0.05);
+            const menu = document.getElementById('startMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            document.getElementById('audioStatus').innerText = audioEnabled ? "🔊 Sound On" : "🔇 Sound Off";
+        }
+
+        function triggerClue(clueKey, officerThoughts) {
+            if (cluesDiscovered.has(clueKey)) return;
+
+            cluesDiscovered.add(clueKey);
+            playCreepySting();
+
+            // Flash screen glitch effect
+            document.body.classList.add('glitch');
+            setTimeout(() => document.body.classList.remove('glitch'), 300);
+
+            // Update Clue Counter (Max 10)
+            document.getElementById('clueCounter').innerText = `Clues: ${cluesDiscovered.size}/10`;
+
+            // Highlight notebook badge
+            const badge = document.getElementById('notebookBadge');
+            badge.classList.remove('hidden');
+
+            // Insert Officer Commentary inside Notebook
+            const notebook = document.getElementById('notebookLogs');
+            const newEntry = document.createElement('div');
+            newEntry.className = "p-2 bg-yellow-200/60 border-l-4 border-red-700 rounded text-xs text-black animate-pulse";
+            newEntry.innerHTML = `
+                <p class="font-bold text-[10px] text-red-800">OFFICER WARD LOG [${new Date().toLocaleTimeString()}]:</p>
+                <p>"${officerThoughts}"</p>
+            `;
+            notebook.appendChild(newEntry);
+            notebook.scrollTop = notebook.scrollHeight;
+
+            // Auto-open notebook window for major milestones
+            openWindow('win-notebook');
+        }
+
+        function addUserNote() {
+            const input = document.getElementById('userNoteInput');
+            if (!input.value.trim()) return;
+
+            playBeep(800, 'sine', 0.05);
+            const notebook = document.getElementById('notebookLogs');
+            const newEntry = document.createElement('div');
+            newEntry.className = "p-2 bg-white border border-amber-300 rounded text-xs text-amber-900";
+            newEntry.innerHTML = `
+                <p class="font-bold text-[10px] text-gray-500">MY NOTE:</p>
+                <p>${input.value.trim()}</p>
+            `;
+            notebook.appendChild(newEntry);
+            input.value = "";
+            notebook.scrollTop = notebook.scrollHeight;
+        }
+
+        function selectPhoto(photoId) {
+            playBeep(700, 'sine', 0.05);
+            const display = document.getElementById('photoDisplay');
+
+            if (photoId === 'photo1') {
+                display.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-48 h-48 bg-gray-800 border-4 border-white flex items-center justify-center overflow-hidden mb-2 shadow-lg">
+                            <svg class="w-32 h-32 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs text-yellow-300 font-mono">Clara Vance - High School ID Photo (1997)</p>
+                    </div>
+                `;
+                triggerClue('photo_clara', 'Clara looks terrified even in her school picture... Her eyes were sunken.');
+            } else if (photoId === 'photo2') {
+                display.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-56 h-40 bg-emerald-950 border-4 border-white flex items-center justify-center p-2 mb-2">
+                            <div class="text-emerald-500 font-pixel text-center">
+                                [ABANDONED MILL WOODS]<br>
+                                <span class="text-[10px] text-gray-400">GPS: 42.311, -71.890</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-emerald-400 font-mono">Old Miller's Mill - Last known location</p>
+                    </div>
+                `;
+            } else if (photoId === 'photo3') {
+                display.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-48 h-48 bg-stone-900 border-4 border-red-900 flex items-center justify-center mb-2">
+                            <svg class="w-28 h-28 text-red-600 symbol-glow animate-pulse" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4">
+                                <circle cx="50" cy="50" r="40" />
+                                <path d="M50 10 Q70 50 50 90 Q30 50 50 10 Z" />
+                                <path d="M10 50 Q50 70 90 50 Q50 30 10 50 Z" />
+                            </svg>
+                        </div>
+                        <p class="text-xs text-red-400 font-mono font-bold">Carved symbol on oak tree near the riverbank.</p>
+                    </div>
+                `;
+                triggerClue('tree_symbol', 'That carved tree symbol... it matches the cult lore from the bulletin board.');
+            } else if (photoId === 'photo4') {
+                display.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-56 h-48 bg-red-950 border-4 border-red-600 flex flex-col items-center justify-center p-2 mb-2 glitch">
+                            <div class="text-red-500 font-pixel text-center text-lg font-bold">
+                                ERROR: FILE DAMAGED
+                            </div>
+                            <p class="text-[10px] text-white mt-2 bg-red-900/80 p-1">
+                                Recovered frame: 12 cult figures in red robes encircling an altar.
+                            </p>
+                        </div>
+                        <p class="text-xs text-red-500 font-mono font-bold">CORRUPT_04.JPG (Recovered Floppy Disk)</p>
+                    </div>
+                `;
+                triggerClue('corrupt_photo', 'The corrupted image shows police badges on the cult robes! Chief Miller is involved!');
+            } else if (photoId === 'photo5') {
+                display.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-52 h-44 bg-zinc-900 border-4 border-amber-600 flex items-center justify-center p-2 mb-2">
+                            <div class="text-amber-500 font-mono text-center text-xs">
+                                [BEDROOM WINDOW GLASS]<br>
+                                <span class="text-red-400">Muddy handprints with 6 fingers visible from exterior.</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-amber-300 font-mono">IMG_005.JPG - Vance Residence 2nd Floor Window</p>
+                    </div>
+                `;
+                triggerClue('six_fingers', 'The muddy handprints outside Clara\'s 2nd-story window had 6 fingers... what kind of monsters are they?');
+            } else if (photoId === 'photo6') {
+                display.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-56 h-44 bg-amber-950 border-4 border-amber-700 p-3 mb-2 font-mono text-[10px] text-amber-200">
+                            <p class="font-bold border-b border-amber-700 text-center">TOWN SACRIFICE REGISTER</p>
+                            <p class="mt-1">1916: Martha Vance - ACCEPTED</p>
+                            <p>1943: David Miller - ACCEPTED</p>
+                            <p>1970: Sarah Jenkins - ACCEPTED</p>
+                            <p class="text-red-400 font-bold">1997: Clara Vance - IN PROGRESS</p>
+                        </div>
+                        <p class="text-xs text-amber-400 font-mono">IMG_006.JPG - Chief Miller\'s Desk Drawer Ledger</p>
+                    </div>
+                `;
+                triggerClue('ledger_names', 'Chief Miller\'s private ledger lists every victim back to 1916! My sister Sarah was sacrificed in 1970!');
+            } else if (photoId === 'photo7') {
+                display.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-52 h-44 bg-red-950 border-4 border-red-800 flex items-center justify-center p-2 mb-2">
+                            <div class="text-red-500 font-pixel text-center text-sm">
+                                [CATABOMB DOOR UNDER MILL]<br>
+                                <span class="text-xs text-white">Carved Inscription: "1916 - PERPETUUM"</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-red-400 font-mono">IMG_007.JPG - Entrance to catacombs below Miller's Mill</p>
+                    </div>
+                `;
+                triggerClue('catacomb_entry', 'The catacomb entrance under the old mill has 1916 carved over the archway! That\'s the override code year!');
+            }
+        }
+
+        function readEmail(emailId) {
+            playBeep(650, 'sine', 0.05);
+            const body = document.getElementById('emailBody');
+
+            if (emailId === 'email1') {
+                body.innerHTML = `
+                    <p class="mb-2"><strong>FROM:</strong> Sheriff Miller &lt;miller@oakridge-pd.gov&gt;</p>
+                    <p class="mb-2"><strong>TO:</strong> Thomas Ward &lt;tward@oakridge-pd.gov&gt;</p>
+                    <hr class="my-2">
+                    <p class="leading-relaxed">
+                        Ward, stop digging into the Clara Vance case. It's a runaway situation. Her parents are hysterical. Close the report and archive it in the RESTRICTED disk. Use the standard override key (1916). Don't make me pull you off active duty.
+                    </p>
+                `;
+            } else if (emailId === 'email2') {
+                body.innerHTML = `
+                    <p class="mb-2"><strong>FROM:</strong> Emily S. &lt;emily_97@netcom.com&gt;</p>
+                    <p class="mb-2"><strong>TO:</strong> Thomas Ward &lt;tward@oakridge-pd.gov&gt;</p>
+                    <hr class="my-2">
+                    <p class="leading-relaxed text-blue-900">
+                        Detective, please help! Clara told me she found a black book in Sheriff Miller's desk during her school field trip to the station. She said the town elders are sacrificing someone at the mill on the night of the New Moon. Please check the mill vault before tonight!
+                    </p>
+                `;
+                triggerClue('emily_email', 'Clara found Chief Miller\'s ritual book in his desk. The town elders are running this!');
+            } else if (emailId === 'email3') {
+                body.innerHTML = `
+                    <p class="mb-2 text-red-700"><strong>FROM:</strong> ANONYMOUS &lt;abaddon@pale-root.org&gt;</p>
+                    <p class="mb-2 text-red-700"><strong>TO:</strong> Thomas Ward &lt;tward@oakridge-pd.gov&gt;</p>
+                    <hr class="my-2 border-red-300">
+                    <p class="leading-relaxed text-red-800 font-bold bg-red-100 p-2">
+                        WE SEE YOU AT YOUR DESK, THOMAS. THE WOODS ARE WAITING. DO NOT KEEP THE HORNED ONE WAITING.
+                    </p>
+                `;
+            } else if (emailId === 'email4') {
+                body.innerHTML = `
+                    <p class="mb-2"><strong>FROM:</strong> Dr. Aris (Coroner) &lt;aris@oakridge-med.gov&gt;</p>
+                    <p class="mb-2"><strong>TO:</strong> Thomas Ward &lt;tward@oakridge-pd.gov&gt;</p>
+                    <hr class="my-2">
+                    <p class="leading-relaxed text-slate-800">
+                        Ward, I ran spectro-analysis on soil from Clara's shoes. It contains ancient human bone ash and dried blood dating back over 80 years. This soil isn't from the surface—it comes from deep subterranean caverns beneath the river bed.
+                    </p>
+                `;
+                triggerClue('coroner_soil', 'Coroner Aris found ancient human bone ash in the soil under Clara\'s boots! She was down in the catacombs!');
+            } else if (emailId === 'email5') {
+                body.innerHTML = `
+                    <p class="mb-2 text-amber-900"><strong>FROM:</strong> Deputy Evans &lt;evans@oakridge-pd.gov&gt;</p>
+                    <p class="mb-2"><strong>TO:</strong> Thomas Ward &lt;tward@oakridge-pd.gov&gt;</p>
+                    <hr class="my-2">
+                    <p class="leading-relaxed text-slate-900">
+                        Ward, I\'m typing this on my break. Don\'t trust Chief Miller. He locked your sister Sarah\'s case file back in 1970 and burned the physical evidence. Look up the 1970 issue in the Town Archives microfilm!
+                    </p>
+                `;
+                triggerClue('evans_warning', 'Deputy Evans warned me about Chief Miller burning my sister Sarah\'s evidence in 1970!');
+            }
+        }
+
+        function showArchive(artId) {
+            playBeep(600, 'sine', 0.05);
+            const display = document.getElementById('archiveDisplay');
+
+            if (artId === 'art1943') {
+                display.innerHTML = `
+                    <h3 class="font-bold text-sm text-amber-950 mb-1 border-b pb-1">OAKRIDGE HERALD - OCT 18, 1943</h3>
+                    <h4 class="font-bold text-base mb-2">BOY, 14, VANISHES NEAR BLACKWOOD RIDGE</h4>
+                    <p class="mb-2">
+                        Search operations for young David Miller have been suspended by Mayor Tobias Vance after five days. Search parties noted strange red bonfires burning across Blackwood Ridge at night.
+                    </p>
+                    <p class="italic text-amber-900 bg-amber-100 p-2 border-l-2 border-amber-600">
+                        "Local elders state the town soil yields record crops following every 27-year cycle. Citizens are urged to observe the midnight curfew."
+                    </p>
+                `;
+            } else if (artId === 'art1970') {
+                display.innerHTML = `
+                    <h3 class="font-bold text-sm text-amber-950 mb-1 border-b pb-1">OAKRIDGE HERALD - OCT 12, 1970</h3>
+                    <h4 class="font-bold text-base text-red-900 mb-2">SARAH JENKINS (16) MISSING NEAR OLD MILL</h4>
+                    <p class="mb-2">
+                        Oakridge High student Sarah Jenkins vanished walking home. Her brother Thomas Jenkins (4) was found crying on the porch, stating "the tree men took Sarah into the hole."
+                    </p>
+                    <p class="p-2 bg-yellow-100 text-red-950 font-bold border-l-4 border-red-700">
+                        Sheriff Miller (Jr.) declared the case closed after 48 hours, ruling it a runaway incident.
+                    </p>
+                `;
+                triggerClue('archive_1970', 'The 1970 newspaper confirms my sister Sarah was taken by the "tree men"... Sheriff Miller closed her case in 48 hours too!');
+            } else if (artId === 'art1997') {
+                display.innerHTML = `
+                    <h3 class="font-bold text-sm text-amber-950 mb-1 border-b pb-1">OAKRIDGE HERALD - OCT 12, 1997</h3>
+                    <h4 class="font-bold text-base mb-2">CLARA VANCE MISSING; POLICE URGE CALM</h4>
+                    <p class="mb-2">
+                        Town Council President Vance and Chief Miller assured residents that the disappearance of Clara Vance is an isolated juvenile incident.
+                    </p>
+                    <p class="italic">
+                        "Oakridge remains the safest town in the county. The upcoming Blood Moon Festival will proceed as scheduled at Old Miller's Mill tonight at 3:33 AM."
+                    </p>
+                `;
+            }
+        }
+
+        function playAudioTape(tapeId) {
+            playBeep(750, 'square', 0.08);
+            const nameEl = document.getElementById('audioTrackName');
+            const timeEl = document.getElementById('audioTime');
+            const scriptEl = document.getElementById('audioTranscript');
+
+            if (tapeId === 'tape1') {
+                nameEl.innerText = "TRACK: 911_CALL_OCT11_0333AM.WAV";
+                timeEl.innerText = "00:42 / 00:42";
+                scriptEl.innerHTML = `
+                    <p class="text-red-400">[DISPATCH TAPE - OCT 11 - 03:33:05 AM]</p>
+                    <p><strong>CALLER (ELEANOR VANCE):</strong> "Help us! Someone is scratching inside the walls! Clara is screaming that they are pulling her through the floor!"</p>
+                    <p><strong>DISPATCH (DEPUTY EVANS):</strong> "Ma'am, stay calm. Sending a unit..."</p>
+                    <p><strong>VOICE IN BACKGROUND (CHIEF MILLER):</strong> "Cancel that unit, Evans. Stand down. I'll handle the Vance house personally."</p>
+                `;
+                triggerClue('tape_dispatch', 'Dispatch tape proves Chief Miller personally intercepted the 911 call from Clara\'s mother!');
+            } else if (tapeId === 'tape2') {
+                nameEl.innerText = "TRACK: CHIEF_INTERROGATION_CLARA.WAV";
+                timeEl.innerText = "01:15 / 01:15";
+                scriptEl.innerHTML = `
+                    <p class="text-yellow-400">[SECRET WIRETAP - POLICE STATION - OCT 08]</p>
+                    <p><strong>CHIEF MILLER:</strong> "Clara, your bloodline was chosen in 1916. Your great-aunt Martha gave herself so Oakridge could thrive."</p>
+                    <p><strong>CLARA VANCE:</strong> "You\'re insane! You killed Sarah Jenkins in 1970!"</p>
+                    <p><strong>CHIEF MILLER:</strong> "Sarah\'s sacrifice gave us 27 years of prosperity. And now, young Thomas Ward has grown up to be our witness..."</p>
+                `;
+                triggerClue('tape_interrogation', 'Chief Miller confessed on tape that my sister Sarah\'s sacrifice bought 27 years of town prosperity!');
+            } else if (tapeId === 'tape3') {
+                nameEl.innerText = "TRACK: TOWN_COUNCIL_RITUAL_MEETING.WAV";
+                timeEl.innerText = "00:58 / 00:58";
+                scriptEl.innerHTML = `
+                    <p class="text-red-500 font-bold">[COUNCIL CHAMBERS WIRETAP - OCT 10 - 11:00 PM]</p>
+                    <p><strong>COUNCILMAN VANCE:</strong> "Is Detective Ward suspecting anything?"</p>
+                    <p><strong>CHIEF MILLER:</strong> "No. He\'s sitting at his desk terminal right now reading the files. Once he uncovers the vault code (1916), he will unlock room 402\'s auto-lock."</p>
+                    <p><strong>COUNCILMAN VANCE:</strong> "Good. The Horned One demands both the pure virgin and the seeker of truth."</p>
+                `;
+            }
+        }
+
+        function inspectMapPoint(pointId) {
+            playBeep(550, 'sine', 0.05);
+            const mapDetails = document.getElementById('mapDetails');
+
+            if (pointId === 'vance_house') {
+                mapDetails.innerHTML = `
+                    <p class="font-bold text-red-400">SURVEY POINT 1: VANCE RESIDENCE (142 MAPLE ST)</p>
+                    <p>Disappearance site. High electromagnetic anomalies detected at 03:33 AM daily.</p>
+                `;
+            } else if (pointId === 'old_mill') {
+                mapDetails.innerHTML = `
+                    <p class="font-bold text-yellow-400">SURVEY POINT 2: OLD MILLER'S MILL</p>
+                    <p>Subterranean tunnel network connects mill basement directly to the police precinct vault room!</p>
+                `;
+                triggerClue('map_tunnels', 'The GIS map shows subterranean tunnels connect the Old Mill catacombs directly under this police station!');
+            } else if (pointId === 'police_dept') {
+                mapDetails.innerHTML = `
+                    <p class="font-bold text-blue-400">SURVEY POINT 3: OAKRIDGE POLICE PRECINCT</p>
+                    <p>Built in 1916 over the primary sacrificial sinkhole. Emergency containment doors lock electronically from restricted vault.</p>
+                `;
+            } else if (pointId === 'blackwood_ridge') {
+                mapDetails.innerHTML = `
+                    <p class="font-bold text-emerald-400">SURVEY POINT 4: BLACKWOOD RIDGE SINKHOLE</p>
+                    <p>Unmapped deep cavern system where victims\' belongings have been unearthed every 27 years.</p>
+                `;
+            }
+        }
+
+        function sendIrcMessage() {
+            const input = document.getElementById('ircInput');
+            const val = input.value.trim();
+            if (!val) return;
+
+            playBeep(700, 'sine', 0.05);
+            const log = document.getElementById('ircLog');
+
+            const pUser = document.createElement('p');
+            pUser.innerHTML = `<span class="text-cyan-400">&lt;Det_Ward&gt;</span> ${val}`;
+            log.appendChild(pUser);
+
+            input.value = "";
+
+            setTimeout(() => {
+                const pReply = document.createElement('p');
+                pReply.className = "text-red-500 font-bold glitch";
+                pReply.innerHTML = `&lt;RootDweller&gt; WE SEE YOU TYPING, DETECTIVE WARD. LOOK AT THE CLOCK. IT IS ALMOST 03:33 AM.`;
+                log.appendChild(pReply);
+                log.scrollTop = log.scrollHeight;
+                playCreepySting();
+            }, 1000);
+        }
+
+        function unlockVault() {
+            const pin = document.getElementById('vaultPin').value;
+            const msg = document.getElementById('vaultMessage');
+
+            if (pin === "1916") {
+                playCreepySting();
+                msg.innerText = "ACCESS GRANTED. DECRYPTING AUDIO...";
+                setTimeout(() => {
+                    openWindow('win-climax');
+                }, 1000);
+            } else {
+                playBeep(150, 'sawtooth', 0.3);
+                msg.innerText = "INVALID OVERRIDE CODE!";
+            }
+        }
+
+        function finishGame() {
+            document.body.innerHTML = `
+                <div class="w-screen h-screen bg-black text-red-600 flex flex-col items-center justify-center p-8 text-center font-mono select-none">
+                    <h1 class="text-4xl font-pixel text-red-700 mb-4 animate-pulse">GAME OVER</h1>
+                    <p class="text-lg text-gray-300 mb-6 max-w-lg">
+                        You felt cold, muddy fingers with six digits touch the back of your neck. The police precinct was quiet tonight... too quiet. Case #97-0402 remains permanently unsolved, and Detective Thomas Ward was never seen again.
+                    </p>
+                    <div class="border border-red-800 p-4 bg-red-950/40 text-xs text-red-400 font-serif max-w-md">
+                        "The blood harvest of 1997 is complete. Oakridge shall flourish until 2024."
+                    </div>
+                    <button onclick="location.reload()" class="mt-8 px-6 py-2 bg-red-900 hover:bg-red-800 text-white font-pixel text-sm rounded border border-red-500">
+                        RESTART TERMINAL OS
+                    </button>
+                </div>
+            `;
+        }
+
+        // Draggable window logic
+        document.addEventListener('mousedown', function(e) {
+            const handle = e.target.closest('.handle');
+            if (!handle) return;
+
+            const win = handle.closest('.win-outset');
+            if (!win) return;
+
+            highestZ += 1;
+            win.style.zIndex = highestZ;
+
+            let shiftX = e.clientX - win.getBoundingClientRect().left;
+            let shiftY = e.clientY - win.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                win.style.left = pageX - shiftX + 'px';
+                win.style.top = pageY - shiftY + 'px';
+            }
+
+            function onMouseMove(event) {
+                moveAt(event.clientX, event.clientY);
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+
+            document.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.onmouseup = null;
+            };
+        });
+
+        // Initialize Live Clock
+        setInterval(() => {
+            const now = new Date();
+            const clock = document.getElementById('crtClock');
+            if (clock) {
+                clock.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
