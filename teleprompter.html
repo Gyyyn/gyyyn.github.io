@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teleprompter Studio Pro</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Georgia', 'Cambria', 'serif'],
+            mono: ['JetBrains Mono', 'Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    /* Hardware Mirror Transformations */
+    .mirror-x { transform: scaleX(-1); }
+    .mirror-y { transform: scaleY(-1); }
+    .mirror-xy { transform: scale(-1, -1); }
+
+    /* Hide scrollbars during prompter mode for distraction-free reading */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Stage Direction Badge Auto-Highlighting */
+    .cue-badge {
+      display: inline-block;
+      padding: 0.15em 0.5em;
+      margin: 0 0.2em;
+      font-size: 0.7em;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: 0.375rem;
+      background-color: rgba(99, 102, 241, 0.25);
+      color: #a5b4fc;
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      vertical-align: middle;
+    }
+
+    /* Video Webcam Feed Mirroring */
+    .webcam-flip { transform: scaleX(-1); }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-hidden antialiased selection:bg-brand-500 selection:text-white">
+
+  <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-20 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+        <i data-lucide="tv-2" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
+          Teleprompter Pro
+          <span class="text-[10px] uppercase font-semibold tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full">v2.5</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">Ultra-smooth, professional studio teleprompter</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 sm:gap-3">
+      <button id="btn-shortcuts" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 rounded-lg flex items-center gap-1.5 transition">
+        <i data-lucide="keyboard" class="w-4 h-4"></i>
+        <span class="hidden md:inline">Shortcuts</span>
+      </button>
+
+      <button id="btn-sample" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 rounded-lg flex items-center gap-1.5 transition">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">Load Demo</span>
+      </button>
+
+      <button id="btn-tts-listen" class="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 rounded-lg flex items-center gap-1.5 transition">
+        <i data-lucide="volume-2" class="w-4 h-4 text-brand-400"></i>
+        <span class="hidden sm:inline">Listen Narration</span>
+      </button>
+
+      <button id="btn-start-prompter" class="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 rounded-lg flex items-center gap-2 shadow-lg shadow-brand-600/25 transition transform hover:scale-[1.02] active:scale-[0.98]">
+        <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+        <span>Start Prompting</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="studio-view" class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+    
+    <!-- Left Section: Script Editor & File Drop Zone -->
+    <section class="flex-1 flex flex-col min-w-0 border-r border-slate-800 bg-slate-950 relative">
+      <!-- Toolbar -->
+      <div class="p-3 bg-slate-900/60 border-b border-slate-800/80 flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2">
+          <label for="script-title" class="text-xs font-medium text-slate-400">Title:</label>
+          <input type="text" id="script-title" value="My Keynote Speech" class="bg-slate-950 border border-slate-700/70 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-brand-500 w-40 sm:w-56 font-medium" placeholder="Script Title">
+        </div>
+
+        <div class="flex items-center gap-4 text-xs text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="type" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span>Words: <strong id="word-count" class="text-slate-200">0</strong></span>
+          </div>
+          <div class="w-px h-3 bg-slate-800"></div>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span>Est. Speech: <strong id="est-time" class="text-slate-200">00:00</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="editor-container" class="flex-1 relative p-4 flex flex-col">
+        <textarea id="script-input" class="w-full flex-1 bg-transparent text-slate-100 font-sans text-lg sm:text-xl leading-relaxed resize-none focus:outline-none placeholder-slate-600 p-2" placeholder="Type or paste script here...&#10;&#10;Pro Tips:&#10;• Stage cues like [PAUSE 3S] or [SMILE] automatically render as visual cues.&#10;• Drag & drop any .txt or markdown file directly into this area.&#10;• Enable Webcam mode in settings to practice right in front of your camera."></textarea>
+      </div>
+
+      <!-- Editor Footbar Actions -->
+      <div class="p-3 border-t border-slate-800/80 bg-slate-900/40 flex items-center justify-between text-xs text-slate-400">
+        <div class="flex items-center gap-2">
+          <button id="btn-import-file" class="hover:text-brand-400 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-800/50 transition">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> Import .TXT
+          </button>
+          <input type="file" id="file-input" accept=".txt,.md" class="hidden">
+
+          <button id="btn-export-file" class="hover:text-brand-400 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-800/50 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Export
+          </button>
+          
+          <button id="btn-clear" class="hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-800/50 transition ml-2">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear
+          </button>
+        </div>
+        <span id="save-indicator" class="text-slate-500 italic flex items-center gap-1">
+          <i data-lucide="check" class="w-3 h-3 text-emerald-400"></i> Local Auto-saved
+        </span>
+      </div>
+    </section>
+
+    <aside class="w-full md:w-80 lg:w-96 bg-slate-900/50 flex flex-col border-t md:border-t-0 md:border-l border-slate-800 overflow-y-auto">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <h2 class="font-semibold text-sm text-slate-200 flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4 text-brand-400"></i> Prompter Settings
+        </h2>
+        <button id="btn-reset-settings" class="text-xs text-slate-400 hover:text-slate-200 underline">Reset Defaults</button>
+      </div>
+
+      <div class="p-4 space-y-5 flex-1">
+        <!-- Scroll Speed -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-xs">
+            <label for="setting-speed" class="font-medium text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="gauge" class="w-3.5 h-3.5 text-brand-400"></i> Scroll Speed
+            </label>
+            <span id="val-speed" class="text-brand-400 font-mono font-bold">1.5</span>
+          </div>
+          <input type="range" id="setting-speed" min="0.1" max="10.0" step="0.1" value="1.5" class="w-full accent-brand-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+          <p class="text-[11px] text-slate-500">Smooth sub-pixel scroll engine. Use ↑/↓ keys to adjust live.</p>
+        </div>
+
+        <!-- Font Size -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-xs">
+            <label for="setting-fontsize" class="font-medium text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="a-large-small" class="w-3.5 h-3.5 text-brand-400"></i> Font Size
+            </label>
+            <span id="val-fontsize" class="text-brand-400 font-mono font-bold">48px</span>
+          </div>
+          <input type="range" id="setting-fontsize" min="18" max="100" step="2" value="48" class="w-full accent-brand-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Column Width -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-xs">
+            <label for="setting-width" class="font-medium text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="arrows-horizontal" class="w-3.5 h-3.5 text-brand-400"></i> Reading Column Width
+            </label>
+            <span id="val-width" class="text-brand-400 font-mono font-bold">70%</span>
+          </div>
+          <input type="range" id="setting-width" min="30" max="100" step="5" value="70" class="w-full accent-brand-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Line Spacing -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-xs">
+            <label for="setting-lineheight" class="font-medium text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="rows-3" class="w-3.5 h-3.5 text-brand-400"></i> Line Spacing
+            </label>
+            <span id="val-lineheight" class="text-brand-400 font-mono font-bold">1.6</span>
+          </div>
+          <input type="range" id="setting-lineheight" min="1.1" max="2.6" step="0.1" value="1.6" class="w-full accent-brand-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Typography & Alignment -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-300 block">Font Family</label>
+            <select id="setting-fontfamily" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+              <option value="font-sans">Sans-Serif</option>
+              <option value="font-serif">Serif</option>
+              <option value="font-mono">Monospace</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-300 block">Text Alignment</label>
+            <select id="setting-align" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+              <option value="text-left">Left</option>
+              <option value="text-center" selected>Center</option>
+              <option value="text-right">Right</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Color Themes -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-slate-300 block">Contrast Color Theme</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button data-theme="dark" class="theme-btn border-2 border-brand-500 bg-slate-950 text-white rounded-lg p-2 text-xs font-medium flex flex-col items-center gap-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-950 border border-slate-700"></span> Dark
+            </button>
+            <button data-theme="light" class="theme-btn border border-slate-800 bg-slate-100 text-slate-900 rounded-lg p-2 text-xs font-medium flex flex-col items-center gap-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-white border border-slate-300"></span> Light
+            </button>
+            <button data-theme="yellow" class="theme-btn border border-slate-800 bg-slate-950 text-yellow-300 rounded-lg p-2 text-xs font-medium flex flex-col items-center gap-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-yellow-300 border border-yellow-500"></span> HighViz
+            </button>
+            <button data-theme="green" class="theme-btn border border-slate-800 bg-black text-emerald-400 rounded-lg p-2 text-xs font-medium flex flex-col items-center gap-1">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-400 border border-emerald-600"></span> Matrix
+            </button>
+          </div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <div class="space-y-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rig & Hardware Tools</h3>
+          
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300 flex items-center gap-2">
+              <i data-lucide="flip-horizontal" class="w-4 h-4 text-slate-400"></i> Flip Horizontal (Mirror Rig)
+            </span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="toggle-mirror-x" class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300 flex items-center gap-2">
+              <i data-lucide="flip-vertical" class="w-4 h-4 text-slate-400"></i> Flip Vertical
+            </span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="toggle-mirror-y" class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300 flex items-center gap-2">
+              <i data-lucide="camera" class="w-4 h-4 text-slate-400"></i> Webcam Backdrop Practice
+            </span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="toggle-webcam" class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300 flex items-center gap-2">
+              <i data-lucide="mic" class="w-4 h-4 text-slate-400"></i> Voice Controls ("Start", "Stop")
+            </span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="toggle-voice-command" class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-300 flex items-center gap-2">
+              <i data-lucide="scan-line" class="w-4 h-4 text-slate-400"></i> Eye-Line Highlight Indicator
+            </span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="toggle-eyeline" checked class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-xs text-slate-300 flex items-center gap-2">
+              <i data-lucide="timer" class="w-4 h-4 text-slate-400"></i> Countdown Delay
+            </span>
+            <select id="setting-countdown" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200">
+              <option value="0">Off (Instant)</option>
+              <option value="3" selected>3 Seconds</option>
+              <option value="5">5 Seconds</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </main>
+
+  <div id="prompter-stage" class="fixed inset-0 bg-slate-950 z-50 hidden flex-col select-none overflow-hidden">
+    
+    <!-- Live Webcam Stream Video Element (Background Mode) -->
+    <video id="webcam-preview" class="absolute inset-0 w-full h-full object-cover opacity-25 hidden pointer-events-none webcam-flip" autoplay playsinline muted></video>
+
+    <!-- Top Status Overlay Bar -->
+    <div id="prompter-topbar" class="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-slate-950/90 via-slate-950/50 to-transparent z-30 flex items-center justify-between transition-opacity duration-300 opacity-100 hover:opacity-100">
+      <div class="flex items-center gap-3">
+        <button id="btn-exit-prompter" class="bg-slate-800/80 hover:bg-slate-700 text-white p-2 px-3 rounded-xl flex items-center gap-2 text-xs font-semibold backdrop-blur border border-slate-700/60 shadow-lg transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Exit Studio
+        </button>
+        <div id="prompter-status-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 backdrop-blur">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Ready
+        </div>
+        <div id="voice-indicator" class="hidden px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5 backdrop-blur">
+          <i data-lucide="mic" class="w-3 h-3 text-indigo-400 animate-pulse"></i> Voice Active
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="font-mono text-slate-300 text-xs sm:text-sm bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800 backdrop-blur">
+          Elapsed: <span id="prompter-timer" class="text-white font-bold">00:00</span>
+        </div>
+        <button id="btn-toggle-fullscreen" class="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-800 transition" title="Toggle Fullscreen">
+          <i data-lucide="maximize" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Countdown Overlay Screen -->
+    <div id="countdown-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-40 flex items-center justify-center flex-col hidden">
+      <div id="countdown-number" class="text-9xl font-black text-brand-400 animate-bounce">3</div>
+      <p class="text-slate-400 mt-4 font-medium tracking-wide">Get Ready...</p>
+    </div>
+
+    <!-- Eye-Line Highlight Marker Overlay -->
+    <div id="eyeline-guide" class="absolute left-0 right-0 top-1/3 -translate-y-1/2 h-24 border-y border-brand-500/30 bg-brand-500/5 pointer-events-none z-20 flex items-center justify-between px-4">
+      <div class="w-3 h-3 border-l-2 border-t-2 border-brand-400"></div>
+      <div class="w-3 h-3 border-r-2 border-t-2 border-brand-400"></div>
+    </div>
+
+    <div id="prompter-scroll-box" class="w-full h-full overflow-y-auto no-scrollbar relative px-4 z-10">
+      <div id="prompter-text-wrapper" class="min-h-full py-[35vh] mx-auto transition-transform duration-100">
+        <div id="prompter-content" class="whitespace-pre-wrap font-sans text-white transition-all leading-relaxed">
+          <!-- Text rendered dynamically with markup parsing -->
+        </div>
+      </div>
+    </div>
+
+    <div id="prompter-hud" class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-3 shadow-2xl backdrop-blur-xl z-30 flex items-center gap-3 sm:gap-4 transition-all duration-300 max-w-xl w-[92%]">
+      
+      <!-- Rewind / Reset Button -->
+      <button id="hud-btn-rewind" title="Reset to Top (R)" class="p-2.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 rounded-xl transition">
+        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Speed Control Down -->
+      <button id="hud-btn-speed-down" title="Slower (Down Arrow)" class="p-2.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 rounded-xl transition">
+        <i data-lucide="minus" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Main Play / Pause Toggle Button -->
+      <button id="hud-btn-play" title="Play / Pause (Space)" class="px-5 sm:px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-brand-600/30 transition transform active:scale-95">
+        <i data-lucide="play" class="w-5 h-5 fill-white" id="hud-play-icon"></i>
+        <span id="hud-play-text">Play</span>
+      </button>
+
+      <!-- Speed Control Up -->
+      <button id="hud-btn-speed-up" title="Faster (Up Arrow)" class="p-2.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 rounded-xl transition">
+        <i data-lucide="plus" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Speed Meter Indicator -->
+      <div class="flex flex-col items-center px-1">
+        <span class="text-[10px] text-slate-400 uppercase tracking-wider">Speed</span>
+        <span id="hud-speed-val" class="font-mono text-sm font-bold text-brand-400">1.5</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-px h-8 bg-slate-800 hidden sm:block"></div>
+
+      <!-- Quick Font Size Adjuster inside HUD -->
+      <div class="hidden sm:flex items-center gap-1">
+        <button id="hud-btn-font-smaller" title="Decrease Font Size" class="p-2 text-slate-400 hover:text-white">
+          <i data-lucide="minus-circle" class="w-4 h-4"></i>
+        </button>
+        <i data-lucide="type" class="w-4 h-4 text-slate-400"></i>
+        <button id="hud-btn-font-larger" title="Increase Font Size" class="p-2 text-slate-400 hover:text-white">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Mirror Flip Shortcut inside HUD -->
+      <button id="hud-btn-mirror" title="Toggle Mirroring (M)" class="p-2.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 rounded-xl transition ml-auto">
+        <i data-lucide="flip-horizontal" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <div id="modal-shortcuts" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <button id="modal-shortcuts-close" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <i data-lucide="keyboard" class="w-5 h-5 text-brand-400"></i> Keyboard Shortcuts
+      </h3>
+      <div class="space-y-2.5 text-sm">
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-300">Play / Pause</span>
+          <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">Space</kbd>
+        </div>
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-300">Adjust Speed (±0.2)</span>
+          <div class="flex gap-1">
+            <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">↑</kbd>
+            <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">↓</kbd>
+          </div>
+        </div>
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-300">Manual Nudge Step</span>
+          <div class="flex gap-1">
+            <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">←</kbd>
+            <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">→</kbd>
+          </div>
+        </div>
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-300">Reset Position to Top</span>
+          <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">R</kbd>
+        </div>
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-300">Toggle Horizontal Mirror</span>
+          <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">M</kbd>
+        </div>
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-300">Toggle Fullscreen</span>
+          <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">F</kbd>
+        </div>
+        <div class="flex justify-between items-center py-1">
+          <span class="text-slate-300">Exit Teleprompter</span>
+          <kbd class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-slate-200">Esc</kbd>
+        </div>
+      </div>
+      <button id="modal-shortcuts-ok" class="mt-6 w-full py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-medium text-sm transition">Got it!</button>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_SCRIPT = `Welcome to Teleprompter Pro Studio!
+
+[PAUSE 2S]
+
+This high-performance teleprompter features a precision sub-pixel scroll engine designed for crystal-clear readability at any speed.
+
+[KEY FEATURES]
+1. Ultra-Smooth Speed Control: Scroll speeds from 0.1 to 10.0 with zero frame-stutter or truncation bugs.
+2. Mirror Rig Compatibility: Flip horizontally or vertically for physical glass beam-splitter hardware rigs.
+3. Webcam Backdrop Practice: Turn on your webcam in settings to view your posture directly behind your script.
+4. Voice Control Commands: Enable Voice Controls to say "start", "stop", "faster", or "slower" hands-free!
+
+[SMILE]
+
+Edit this text or press "Start Prompting" to begin your presentation!`;
+
+    const state = {
+      title: 'My Keynote Speech',
+      text: DEFAULT_SCRIPT,
+      speed: 1.5,
+      fontSize: 48,
+      width: 70,
+      lineHeight: 1.6,
+      fontFamily: 'font-sans',
+      align: 'text-center',
+      theme: 'dark',
+      mirrorX: false,
+      mirrorY: false,
+      eyeline: true,
+      countdownSecs: 3,
+      enableWebcam: false,
+      enableVoice: false,
+      
+      // Floating-point Scroll Engine State
+      scrollPosition: 0,
+      isPlaying: false,
+      isCountdownActive: false,
+      timerInterval: null,
+      elapsedSeconds: 0,
+      animationFrameId: null,
+      webcamStream: null,
+      speechRecognition: null
+    };
+
+    const themes = {
+      dark: { bg: 'bg-slate-950', text: 'text-slate-100' },
+      light: { bg: 'bg-slate-100', text: 'text-slate-900' },
+      yellow: { bg: 'bg-slate-950', text: 'text-yellow-300' },
+      green: { bg: 'bg-black', text: 'text-emerald-400' }
+    };
+
+    const elements = {
+      scriptInput: document.getElementById('script-input'),
+      scriptTitle: document.getElementById('script-title'),
+      wordCount: document.getElementById('word-count'),
+      estTime: document.getElementById('est-time'),
+      editorContainer: document.getElementById('editor-container'),
+      saveIndicator: document.getElementById('save-indicator'),
+
+      speedInput: document.getElementById('setting-speed'),
+      speedVal: document.getElementById('val-speed'),
+      fontSizeInput: document.getElementById('setting-fontsize'),
+      fontSizeVal: document.getElementById('val-fontsize'),
+      widthInput: document.getElementById('setting-width'),
+      widthVal: document.getElementById('val-width'),
+      lineHeightInput: document.getElementById('setting-lineheight'),
+      lineHeightVal: document.getElementById('val-lineheight'),
+      fontFamilySelect: document.getElementById('setting-fontfamily'),
+      alignSelect: document.getElementById('setting-align'),
+      mirrorXToggle: document.getElementById('toggle-mirror-x'),
+      mirrorYToggle: document.getElementById('toggle-mirror-y'),
+      eyelineToggle: document.getElementById('toggle-eyeline'),
+      countdownSelect: document.getElementById('setting-countdown'),
+      webcamToggle: document.getElementById('toggle-webcam'),
+      voiceToggle: document.getElementById('toggle-voice-command'),
+
+      prompterStage: document.getElementById('prompter-stage'),
+      prompterContent: document.getElementById('prompter-content'),
+      prompterWrapper: document.getElementById('prompter-text-wrapper'),
+      prompterScrollBox: document.getElementById('prompter-scroll-box'),
+      prompterTimer: document.getElementById('prompter-timer'),
+      eyelineGuide: document.getElementById('eyeline-guide'),
+      countdownOverlay: document.getElementById('countdown-overlay'),
+      countdownNumber: document.getElementById('countdown-number'),
+      prompterStatusBadge: document.getElementById('prompter-status-badge'),
+      voiceIndicator: document.getElementById('voice-indicator'),
+      webcamVideo: document.getElementById('webcam-preview'),
+
+      hudPlayBtn: document.getElementById('hud-btn-play'),
+      hudPlayIcon: document.getElementById('hud-play-icon'),
+      hudPlayText: document.getElementById('hud-play-text'),
+      hudSpeedVal: document.getElementById('hud-speed-val'),
+      hudSpeedUp: document.getElementById('hud-btn-speed-up'),
+      hudSpeedDown: document.getElementById('hud-btn-speed-down'),
+      hudRewind: document.getElementById('hud-btn-rewind'),
+      hudMirror: document.getElementById('hud-btn-mirror'),
+      hudFontSmaller: document.getElementById('hud-btn-font-smaller'),
+      hudFontLarger: document.getElementById('hud-btn-font-larger'),
+
+      btnStartPrompter: document.getElementById('btn-start-prompter'),
+      btnExitPrompter: document.getElementById('btn-exit-prompter'),
+      btnToggleFullscreen: document.getElementById('btn-toggle-fullscreen'),
+      btnSample: document.getElementById('btn-sample'),
+      btnTtsListen: document.getElementById('btn-tts-listen'),
+      btnImportFile: document.getElementById('btn-import-file'),
+      btnExportFile: document.getElementById('btn-export-file'),
+      fileInput: document.getElementById('file-input'),
+      btnClear: document.getElementById('btn-clear'),
+      btnShortcuts: document.getElementById('btn-shortcuts'),
+      modalShortcuts: document.getElementById('modal-shortcuts'),
+      modalShortcutsClose: document.getElementById('modal-shortcuts-close'),
+      modalShortcutsOk: document.getElementById('modal-shortcuts-ok'),
+      btnResetSettings: document.getElementById('btn-reset-settings')
+    };
+
+    lucide.createIcons();
+
+    function loadSavedState() {
+      try {
+        const saved = localStorage.getItem('teleprompter_pro_data');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          Object.assign(state, parsed);
+        }
+      } catch (e) {
+        console.warn('LocalStorage load warning:', e);
+      }
+
+      elements.scriptInput.value = state.text;
+      elements.scriptTitle.value = state.title;
+      elements.speedInput.value = state.speed;
+      elements.fontSizeInput.value = state.fontSize;
+      elements.widthInput.value = state.width;
+      elements.lineHeightInput.value = state.lineHeight;
+      elements.fontFamilySelect.value = state.fontFamily;
+      elements.alignSelect.value = state.align;
+      elements.mirrorXToggle.checked = state.mirrorX;
+      elements.mirrorYToggle.checked = state.mirrorY;
+      elements.eyelineToggle.checked = state.eyeline;
+      elements.countdownSelect.value = state.countdownSecs;
+      elements.webcamToggle.checked = state.enableWebcam;
+      elements.voiceToggle.checked = state.enableVoice;
+
+      updateMetrics();
+      updateSettingLabels();
+      applyPrompterStyles();
+    }
+
+    function saveState() {
+      try {
+        state.text = elements.scriptInput.value;
+        state.title = elements.scriptTitle.value;
+        localStorage.setItem('teleprompter_pro_data', JSON.stringify({
+          text: state.text,
+          title: state.title,
+          speed: state.speed,
+          fontSize: state.fontSize,
+          width: state.width,
+          lineHeight: state.lineHeight,
+          fontFamily: state.fontFamily,
+          align: state.align,
+          theme: state.theme,
+          mirrorX: state.mirrorX,
+          mirrorY: state.mirrorY,
+          eyeline: state.eyeline,
+          countdownSecs: state.countdownSecs,
+          enableWebcam: state.enableWebcam,
+          enableVoice: state.enableVoice
+        }));
+      } catch (e) {
+        console.warn('LocalStorage save failed:', e);
+      }
+    }
+
+    function updateMetrics() {
+      const text = elements.scriptInput.value.trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      elements.wordCount.textContent = words;
+
+      // Average natural speaking tempo ~130-140 WPM
+      const totalSeconds = Math.ceil((words / 135) * 60);
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      elements.estTime.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateSettingLabels() {
+      elements.speedVal.textContent = state.speed.toFixed(1);
+      elements.hudSpeedVal.textContent = state.speed.toFixed(1);
+      elements.fontSizeVal.textContent = `${state.fontSize}px`;
+      elements.widthVal.textContent = `${state.width}%`;
+      elements.lineHeightVal.textContent = state.lineHeight;
+    }
+
+    function renderFormattedScript(rawText) {
+      if (!rawText) return '<p class="opacity-50 font-italic">No script text entered...</p>';
+
+      // Escape raw HTML safety
+      let safeText = rawText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Convert bracketed cues like [PAUSE 3S] or [SMILE] to highlighted visual badges
+      safeText = safeText.replace(/\[(.*?)\]/g, '<span class="cue-badge">$1</span>');
+
+      return safeText;
+    }
+
+    function applyPrompterStyles() {
+      const content = elements.prompterContent;
+      const wrapper = elements.prompterWrapper;
+      const stage = elements.prompterStage;
+
+      content.style.fontSize = `${state.fontSize}px`;
+      content.style.lineHeight = state.lineHeight;
+      wrapper.style.width = `${state.width}%`;
+
+      content.className = `whitespace-pre-wrap ${state.fontFamily} ${state.align} transition-colors`;
+
+      const currentTheme = themes[state.theme] || themes.dark;
+      stage.className = `fixed inset-0 ${currentTheme.bg} z-50 flex flex-col select-none overflow-hidden`;
+      content.className += ` ${currentTheme.text}`;
+
+      let transformStr = '';
+      if (state.mirrorX && state.mirrorY) transformStr = 'scale(-1, -1)';
+      else if (state.mirrorX) transformStr = 'scaleX(-1)';
+      else if (state.mirrorY) transformStr = 'scaleY(-1)';
+      else transformStr = 'none';
+
+      wrapper.style.transform = transformStr;
+      elements.eyelineGuide.style.display = state.eyeline ? 'flex' : 'none';
+    }
+
+    let lastTimestamp = null;
+
+    function scrollStep(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // Clamp max delta
+      lastTimestamp = timestamp;
+
+      if (state.isPlaying) {
+        // Base pixels per second scaling formula for ultra-smooth low and high speeds
+        const pixelsPerSecond = state.speed * 28;
+        state.scrollPosition += pixelsPerSecond * deltaTime;
+
+        // Apply float value to DOM scroll container
+        elements.prompterScrollBox.scrollTop = Math.round(state.scrollPosition);
+
+        // Check end of content reached
+        const box = elements.prompterScrollBox;
+        if (box.scrollTop + box.clientHeight >= box.scrollHeight - 10) {
+          pausePrompter();
+        }
+      }
+
+      if (state.isPlaying || state.isCountdownActive) {
+        state.animationFrameId = requestAnimationFrame(scrollStep);
+      }
+    }
+
+    elements.prompterScrollBox.addEventListener('scroll', () => {
+      // Sync internal float position when user scrolls manually while paused or scrolling
+      if (!state.isPlaying) {
+        state.scrollPosition = elements.prompterScrollBox.scrollTop;
+      } else {
+        // If external jump detected while playing
+        if (Math.abs(elements.prompterScrollBox.scrollTop - state.scrollPosition) > 15) {
+          state.scrollPosition = elements.prompterScrollBox.scrollTop;
+        }
+      }
+    });
+
+    async function startPrompter() {
+      saveState();
+      elements.prompterContent.innerHTML = renderFormattedScript(state.text);
+      applyPrompterStyles();
+
+      // Reset scroll position
+      elements.prompterScrollBox.scrollTop = 0;
+      state.scrollPosition = 0;
+
+      // Handle Webcam setup if enabled
+      if (state.enableWebcam) {
+        try {
+          if (!state.webcamStream) {
+            state.webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          }
+          elements.webcamVideo.srcObject = state.webcamStream;
+          elements.webcamVideo.classList.remove('hidden');
+        } catch (e) {
+          console.warn('Webcam access failed:', e);
+          elements.webcamVideo.classList.add('hidden');
+        }
+      } else {
+        elements.webcamVideo.classList.add('hidden');
+      }
+
+      // Handle Voice Controls if enabled
+      if (state.enableVoice) {
+        initVoiceRecognition();
+      } else {
+        stopVoiceRecognition();
+      }
+
+      elements.prompterStage.classList.remove('hidden');
+
+      if (parseInt(state.countdownSecs) > 0) {
+        runCountdown();
+      } else {
+        playPrompter();
+      }
+    }
+
+    function exitPrompter() {
+      pausePrompter();
+      stopVoiceRecognition();
+      if (state.webcamStream) {
+        state.webcamStream.getTracks().forEach(track => track.stop());
+        state.webcamStream = null;
+      }
+      elements.prompterStage.classList.add('hidden');
+      if (state.animationFrameId) {
+        cancelAnimationFrame(state.animationFrameId);
+      }
+    }
+
+    function runCountdown() {
+      state.isCountdownActive = true;
+      let count = parseInt(state.countdownSecs);
+      elements.countdownOverlay.classList.remove('hidden');
+      elements.countdownNumber.textContent = count;
+
+      const countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          elements.countdownNumber.textContent = count;
+        } else {
+          clearInterval(countdownInterval);
+          elements.countdownOverlay.classList.add('hidden');
+          state.isCountdownActive = false;
+          playPrompter();
+        }
+      }, 1000);
+    }
+
+    function playPrompter() {
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      lastTimestamp = null;
+
+      elements.hudPlayText.textContent = 'Pause';
+      elements.hudPlayIcon.setAttribute('data-lucide', 'pause');
+      lucide.createIcons();
+
+      elements.prompterStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 backdrop-blur';
+      elements.prompterStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Prompting`;
+
+      if (!state.timerInterval) {
+        state.timerInterval = setInterval(() => {
+          state.elapsedSeconds++;
+          const mins = String(Math.floor(state.elapsedSeconds / 60)).padStart(2, '0');
+          const secs = String(state.elapsedSeconds % 60).padStart(2, '0');
+          elements.prompterTimer.textContent = `${mins}:${secs}`;
+        }, 1000);
+      }
+
+      state.animationFrameId = requestAnimationFrame(scrollStep);
+    }
+
+    function pausePrompter() {
+      state.isPlaying = false;
+      elements.hudPlayText.textContent = 'Play';
+      elements.hudPlayIcon.setAttribute('data-lucide', 'play');
+      lucide.createIcons();
+
+      elements.prompterStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 backdrop-blur';
+      elements.prompterStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span> Paused`;
+
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+      }
+    }
+
+    function togglePlay() {
+      if (state.isPlaying) pausePrompter();
+      else playPrompter();
+    }
+
+    function rewindPrompter() {
+      pausePrompter();
+      elements.prompterScrollBox.scrollTop = 0;
+      state.scrollPosition = 0;
+      state.elapsedSeconds = 0;
+      elements.prompterTimer.textContent = '00:00';
+    }
+
+    function adjustSpeed(delta) {
+      let newSpeed = Math.max(0.1, Math.min(10.0, state.speed + delta));
+      state.speed = parseFloat(newSpeed.toFixed(1));
+      elements.speedInput.value = state.speed;
+      updateSettingLabels();
+      saveState();
+    }
+
+    function adjustFontSize(delta) {
+      let newSize = Math.max(18, Math.min(100, state.fontSize + delta));
+      state.fontSize = newSize;
+      elements.fontSizeInput.value = state.fontSize;
+      updateSettingLabels();
+      applyPrompterStyles();
+      saveState();
+    }
+
+    function initVoiceRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn('Web Speech API not supported in this browser.');
+        elements.voiceIndicator.classList.add('hidden');
+        return;
+      }
+
+      try {
+        state.speechRecognition = new SpeechRecognition();
+        state.speechRecognition.continuous = true;
+        state.speechRecognition.interimResults = false;
+        state.speechRecognition.lang = 'en-US';
+
+        state.speechRecognition.onresult = (event) => {
+          const lastIndex = event.results.length - 1;
+          const transcript = event.results[lastIndex][0].transcript.trim().toLowerCase();
+          
+          if (transcript.includes('start') || transcript.includes('play') || transcript.includes('go')) {
+            playPrompter();
+          } else if (transcript.includes('stop') || transcript.includes('pause') || transcript.includes('hold')) {
+            pausePrompter();
+          } else if (transcript.includes('faster') || transcript.includes('speed up')) {
+            adjustSpeed(0.4);
+          } else if (transcript.includes('slower') || transcript.includes('slow down')) {
+            adjustSpeed(-0.4);
+          } else if (transcript.includes('reset') || transcript.includes('top')) {
+            rewindPrompter();
+          }
+        };
+
+        state.speechRecognition.onend = () => {
+          if (state.enableVoice && !elements.prompterStage.classList.contains('hidden')) {
+            state.speechRecognition.start(); // Restart listener loop
+          }
+        };
+
+        state.speechRecognition.start();
+        elements.voiceIndicator.classList.remove('hidden');
+      } catch (e) {
+        console.warn('Voice recognition error:', e);
+      }
+    }
+
+    function stopVoiceRecognition() {
+      if (state.speechRecognition) {
+        state.speechRecognition.stop();
+        state.speechRecognition = null;
+      }
+      elements.voiceIndicator.classList.add('hidden');
+    }
+
+    async function listenNarration() {
+      const scriptText = elements.scriptInput.value.trim();
+      if (!scriptText) return;
+
+      const origHtml = elements.btnTtsListen.innerHTML;
+      elements.btnTtsListen.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 text-brand-400 animate-spin"></i> Reading...`;
+      lucide.createIcons();
+
+      // Check if browser SpeechSynthesis is available for instant audio playback preview
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop existing speech
+        const cleanText = scriptText.replace(/\[.*?\]/g, ''); // Strip bracket cues
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.rate = 1.0;
+        
+        utterance.onend = () => {
+          elements.btnTtsListen.innerHTML = origHtml;
+          lucide.createIcons();
+        };
+
+        utterance.onerror = () => {
+          elements.btnTtsListen.innerHTML = origHtml;
+          lucide.createIcons();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert('Text-To-Speech is not supported in this browser.');
+        elements.btnTtsListen.innerHTML = origHtml;
+        lucide.createIcons();
+      }
+    }
+
+    elements.scriptInput.addEventListener('input', () => {
+      state.text = elements.scriptInput.value;
+      updateMetrics();
+      saveState();
+    });
+
+    elements.scriptTitle.addEventListener('input', () => {
+      state.title = elements.scriptTitle.value;
+      saveState();
+    });
+
+    // File Drag and Drop Support
+    const editorBox = elements.editorContainer;
+    ['dragenter', 'dragover'].forEach(eventName => {
+      editorBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        editorBox.classList.add('border-2', 'border-brand-500', 'bg-brand-500/5');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      editorBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        editorBox.classList.remove('border-2', 'border-brand-500', 'bg-brand-500/5');
+      }, false);
+    });
+
+    editorBox.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        const file = files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          elements.scriptInput.value = event.target.result;
+          state.text = event.target.result;
+          elements.scriptTitle.value = file.name.replace(/\.[^/.]+$/, "");
+          state.title = elements.scriptTitle.value;
+          updateMetrics();
+          saveState();
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // Import / Export Buttons
+    elements.btnImportFile.addEventListener('click', () => elements.fileInput.click());
+    elements.fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          elements.scriptInput.value = evt.target.result;
+          state.text = evt.target.result;
+          elements.scriptTitle.value = file.name.replace(/\.[^/.]+$/, "");
+          state.title = elements.scriptTitle.value;
+          updateMetrics();
+          saveState();
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    elements.btnExportFile.addEventListener('click', () => {
+      const blob = new Blob([elements.scriptInput.value], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${elements.scriptTitle.value || 'Script'}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Inputs & Settings Controls
+    elements.speedInput.addEventListener('input', (e) => {
+      state.speed = parseFloat(e.target.value);
+      updateSettingLabels();
+      saveState();
+    });
+
+    elements.fontSizeInput.addEventListener('input', (e) => {
+      state.fontSize = parseInt(e.target.value);
+      updateSettingLabels();
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.widthInput.addEventListener('input', (e) => {
+      state.width = parseInt(e.target.value);
+      updateSettingLabels();
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.lineHeightInput.addEventListener('input', (e) => {
+      state.lineHeight = parseFloat(e.target.value);
+      updateSettingLabels();
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.fontFamilySelect.addEventListener('change', (e) => {
+      state.fontFamily = e.target.value;
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.alignSelect.addEventListener('change', (e) => {
+      state.align = e.target.value;
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.mirrorXToggle.addEventListener('change', (e) => {
+      state.mirrorX = e.target.checked;
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.mirrorYToggle.addEventListener('change', (e) => {
+      state.mirrorY = e.target.checked;
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.webcamToggle.addEventListener('change', (e) => {
+      state.enableWebcam = e.target.checked;
+      saveState();
+    });
+
+    elements.voiceToggle.addEventListener('change', (e) => {
+      state.enableVoice = e.target.checked;
+      saveState();
+    });
+
+    elements.eyelineToggle.addEventListener('change', (e) => {
+      state.eyeline = e.target.checked;
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.countdownSelect.addEventListener('change', (e) => {
+      state.countdownSecs = parseInt(e.target.value);
+      saveState();
+    });
+
+    // Theme Selector Buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.theme-btn').forEach(b => {
+          b.classList.remove('border-brand-500', 'border-2');
+          b.classList.add('border-slate-800');
+        });
+        btn.classList.add('border-brand-500', 'border-2');
+        state.theme = btn.getAttribute('data-theme');
+        applyPrompterStyles();
+        saveState();
+      });
+    });
+
+    // Action Triggers
+    elements.btnStartPrompter.addEventListener('click', startPrompter);
+    elements.btnExitPrompter.addEventListener('click', exitPrompter);
+    elements.hudPlayBtn.addEventListener('click', togglePlay);
+    elements.hudRewind.addEventListener('click', rewindPrompter);
+    elements.hudSpeedUp.addEventListener('click', () => adjustSpeed(0.2));
+    elements.hudSpeedDown.addEventListener('click', () => adjustSpeed(-0.2));
+    elements.hudFontLarger.addEventListener('click', () => adjustFontSize(4));
+    elements.hudFontSmaller.addEventListener('click', () => adjustFontSize(-4));
+    elements.btnTtsListen.addEventListener('click', listenNarration);
+
+    elements.hudMirror.addEventListener('click', () => {
+      state.mirrorX = !state.mirrorX;
+      elements.mirrorXToggle.checked = state.mirrorX;
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.btnToggleFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        elements.prompterStage.requestFullscreen().catch(err => console.warn(err));
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    elements.btnSample.addEventListener('click', () => {
+      elements.scriptInput.value = DEFAULT_SCRIPT;
+      state.text = DEFAULT_SCRIPT;
+      updateMetrics();
+      saveState();
+    });
+
+    elements.btnClear.addEventListener('click', () => {
+      elements.scriptInput.value = '';
+      state.text = '';
+      updateMetrics();
+      saveState();
+    });
+
+    elements.btnResetSettings.addEventListener('click', () => {
+      state.speed = 1.5;
+      state.fontSize = 48;
+      state.width = 70;
+      state.lineHeight = 1.6;
+      state.fontFamily = 'font-sans';
+      state.align = 'text-center';
+      state.theme = 'dark';
+      state.mirrorX = false;
+      state.mirrorY = false;
+      state.eyeline = true;
+      state.countdownSecs = 3;
+      state.enableWebcam = false;
+      state.enableVoice = false;
+
+      elements.speedInput.value = state.speed;
+      elements.fontSizeInput.value = state.fontSize;
+      elements.widthInput.value = state.width;
+      elements.lineHeightInput.value = state.lineHeight;
+      elements.fontFamilySelect.value = state.fontFamily;
+      elements.alignSelect.value = state.align;
+      elements.mirrorXToggle.checked = false;
+      elements.mirrorYToggle.checked = false;
+      elements.eyelineToggle.checked = true;
+      elements.webcamToggle.checked = false;
+      elements.voiceToggle.checked = false;
+      elements.countdownSelect.value = 3;
+
+      updateSettingLabels();
+      applyPrompterStyles();
+      saveState();
+    });
+
+    elements.btnShortcuts.addEventListener('click', () => elements.modalShortcuts.classList.remove('hidden'));
+    elements.modalShortcutsClose.addEventListener('click', () => elements.modalShortcuts.classList.add('hidden'));
+    elements.modalShortcutsOk.addEventListener('click', () => elements.modalShortcuts.classList.add('hidden'));
+
+    window.addEventListener('keydown', (e) => {
+      const isPrompterActive = !elements.prompterStage.classList.contains('hidden');
+
+      if (isPrompterActive) {
+        switch (e.code) {
+          case 'Space':
+            e.preventDefault();
+            togglePlay();
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            adjustSpeed(0.2);
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            adjustSpeed(-0.2);
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            state.scrollPosition += 100;
+            elements.prompterScrollBox.scrollTop = state.scrollPosition;
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            state.scrollPosition = Math.max(0, state.scrollPosition - 100);
+            elements.prompterScrollBox.scrollTop = state.scrollPosition;
+            break;
+          case 'KeyR':
+            e.preventDefault();
+            rewindPrompter();
+            break;
+          case 'KeyM':
+            e.preventDefault();
+            state.mirrorX = !state.mirrorX;
+            elements.mirrorXToggle.checked = state.mirrorX;
+            applyPrompterStyles();
+            saveState();
+            break;
+          case 'KeyF':
+            e.preventDefault();
+            elements.btnToggleFullscreen.click();
+            break;
+          case 'Escape':
+            e.preventDefault();
+            exitPrompter();
+            break;
+        }
+      } else {
+        if (document.activeElement !== elements.scriptInput && document.activeElement !== elements.scriptTitle) {
+          if (e.code === 'Space') {
+            e.preventDefault();
+            startPrompter();
+          }
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+    });
+  </script>
+</body>
+</html>
