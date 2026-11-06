@@ -1,0 +1,2009 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraSynth | Granular Focus Noise & Ambient Soundscape Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                        },
+                        darkbg: '#0b0f17',
+                        cardbg: '#131924',
+                        borderbg: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f17;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Custom Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -5px;
+            border: 2px solid #0b0f17;
+            transition: transform 0.1s ease, background-color 0.2s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #34d399;
+        }
+
+        /* Clean Studio Panel */
+        .glass-panel {
+            background: #131924;
+            border: 1px solid #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 font-sans min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- TOP HEADER / NAV BAR -->
+    <header class="border-b border-slate-800/80 bg-slate-900/90 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-brand-400">
+                    <i class="fa-solid font-bold fa-sliders text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm tracking-tight text-slate-100">Focus Noise</h1>
+                </div>
+            </div>
+
+            <!-- Global Quick Controls & Play Button -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- Master Mute / Volume -->
+                <div class="hidden md:flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <button id="btn-master-mute" class="text-slate-400 hover:text-white transition" title="Toggle Mute">
+                        <i id="icon-master-mute" class="fa-solid fa-volume-high text-xs"></i>
+                    </button>
+                    <input type="range" id="slider-master-volume" min="0" max="1" step="0.01" value="0.75" class="w-24 accent-brand-500">
+                    <span id="label-master-volume" class="text-xs font-mono text-slate-400 w-9">75%</span>
+                </div>
+
+                <!-- Sleep / Fade Timer Button -->
+                <button id="btn-sleep-timer" class="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition flex items-center gap-2 text-xs font-medium">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="text-timer-status" class="hidden sm:inline">Off</span>
+                </button>
+
+                <!-- Master Play/Pause CTA -->
+                <button id="btn-master-play" class="bg-brand-600 hover:bg-brand-500 text-white font-medium px-4 py-1.5 rounded-lg border border-brand-500 transition active:scale-95 flex items-center space-x-2">
+                    <i id="icon-master-play" class="fa-solid fa-play text-xs"></i>
+                    <span id="label-master-play" class="text-xs">Play</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTENT AREA -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col gap-5">
+
+        <!-- PRESETS BAR & VISUALIZER HEADER -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            
+            <!-- Canvas Visualizer Card -->
+            <div class="lg:col-span-2 glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group min-h-[190px]">
+                <div class="flex items-center justify-between mb-3 z-10">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                        <h2 class="text-xs font-semibold tracking-wider uppercase text-slate-400">Visualizer</h2>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-vis-mode" class="px-2.5 py-1 rounded bg-slate-950 text-xs text-slate-300 hover:text-white border border-slate-800 transition">
+                            <i class="fa-solid fa-sliders mr-1 text-[10px]"></i> <span id="lbl-vis-mode">Spectrum</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas element -->
+                <div class="relative w-full h-32 rounded-lg overflow-hidden bg-slate-950 border border-slate-800/80">
+                    <canvas id="visualizer-canvas" class="w-full h-full block"></canvas>
+                    <div id="visualizer-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 text-xs font-mono">
+                        <i class="fa-solid fa-play text-lg mb-2 text-slate-600"></i>
+                        Click "Play" to start audio
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Presets Panel -->
+            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-xs font-semibold tracking-wider uppercase text-slate-400 flex items-center gap-2">
+                            Presets
+                        </h2>
+                        <button id="btn-save-preset" class="text-xs text-brand-400 hover:text-brand-300 font-medium transition">
+                            + Save Preset
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs" id="presets-container">
+                        <!-- Dynamic Presets Populated via JS -->
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>Active Channels: <strong id="active-channels-count" class="text-brand-400">0</strong></span>
+                    <button id="btn-reset-all" class="hover:text-rose-400 transition flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> Reset All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN TABS & TOOLBAR -->
+        <div class="flex items-center border-b border-slate-800 pb-2 overflow-x-auto no-scrollbar">
+            <div class="flex space-x-1" id="navigation-tabs">
+                <button data-tab="tab-generators" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 bg-slate-100 text-slate-900 shadow-sm">
+                    <i class="fa-solid fa-sliders"></i> Sounds
+                </button>
+                <button data-tab="tab-granular" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-atom"></i> Granular
+                </button>
+                <button data-tab="tab-binaural" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-brain"></i> Binaural Beats
+                </button>
+                <button data-tab="tab-equalizer" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-chart-simple"></i> Equalizer
+                </button>
+                <button data-tab="tab-timer" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-hourglass-half"></i> Timer
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT SECTIONS -->
+        <div class="tab-contents">
+            
+            <!-- SECTION 1: SOUND GENERATORS & MIXER -->
+            <div id="tab-generators" class="tab-page space-y-5">
+                <!-- Color Noises Header -->
+                <div>
+                    <h3 class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3 flex items-center gap-2">
+                        Noise Spectrum
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="grid-color-noises">
+                        <!-- Populated dynamic color noise cards -->
+                    </div>
+                </div>
+
+                <!-- Natural Soundscapes & Elements -->
+                <div>
+                    <h3 class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3 flex items-center gap-2">
+                        Ambient Sounds
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="grid-ambient-elements">
+                        <!-- Populated dynamic procedural ambience cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: GRANULAR SYNTHESIZER MODULE -->
+            <div id="tab-granular" class="tab-page hidden">
+                <div class="glass-panel rounded-xl p-5 space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-atom text-slate-400"></i> Granular Engine
+                            </h3>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-granular-active" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+                            </label>
+                            <span class="text-xs font-semibold uppercase text-slate-400" id="lbl-granular-status">Disabled</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <!-- Control: Grain Source Buffer -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <label class="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Grain Source</label>
+                            <select id="select-grain-source" class="w-full bg-slate-900 border border-slate-800 text-xs rounded p-2 text-slate-200 focus:border-brand-500 focus:outline-none">
+                                <option value="pink">Pink Noise</option>
+                                <option value="brown">Brown Noise</option>
+                                <option value="rain">Rain Base</option>
+                                <option value="fire">Crackle Base</option>
+                                <option value="blue">Blue Noise</option>
+                            </select>
+                        </div>
+
+                        <!-- Control: Grain Size -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Grain Size</span>
+                                <span id="lbl-grain-size" class="font-mono text-brand-400">80 ms</span>
+                            </div>
+                            <input type="range" id="slider-grain-size" min="15" max="400" value="80" class="w-full">
+                            <div class="flex justify-between text-[10px] text-slate-500">
+                                <span>15ms</span>
+                                <span>400ms</span>
+                            </div>
+                        </div>
+
+                        <!-- Control: Grain Density / Rate -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Grain Density</span>
+                                <span id="lbl-grain-density" class="font-mono text-brand-400">25 / sec</span>
+                            </div>
+                            <input type="range" id="slider-grain-density" min="5" max="60" value="25" class="w-full">
+                            <div class="flex justify-between text-[10px] text-slate-500">
+                                <span>Sparse</span>
+                                <span>Dense</span>
+                            </div>
+                        </div>
+
+                        <!-- Control: Pitch Randomness -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Pitch Detune</span>
+                                <span id="lbl-grain-pitch" class="font-mono text-brand-400">± 3.0 semitones</span>
+                            </div>
+                            <input type="range" id="slider-grain-pitch" min="0" max="12" step="0.5" value="3" class="w-full">
+                            <div class="flex justify-between text-[10px] text-slate-500">
+                                <span>0</span>
+                                <span>±12</span>
+                            </div>
+                        </div>
+
+                        <!-- Control: Stereo Spatial Scatter -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Stereo Jitter</span>
+                                <span id="lbl-grain-pan" class="font-mono text-brand-400">75%</span>
+                            </div>
+                            <input type="range" id="slider-grain-pan" min="0" max="1" step="0.05" value="0.75" class="w-full">
+                            <div class="flex justify-between text-[10px] text-slate-500">
+                                <span>Mono</span>
+                                <span>Wide</span>
+                            </div>
+                        </div>
+
+                        <!-- Control: Granular Volume -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Granular Volume</span>
+                                <span id="lbl-grain-volume" class="font-mono text-brand-400">50%</span>
+                            </div>
+                            <input type="range" id="slider-grain-volume" min="0" max="1" step="0.01" value="0.5" class="w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: BINAURAL BEATS -->
+            <div id="tab-binaural" class="tab-page hidden">
+                <div class="glass-panel rounded-xl p-5 space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-brain text-slate-400"></i> Binaural Beats
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Use headphones for binaural effect.</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-binaural-active" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+                            </label>
+                            <span class="text-xs font-semibold uppercase text-slate-400" id="lbl-binaural-status">Disabled</span>
+                        </div>
+                    </div>
+
+                    <!-- Target Brainwave Presets Buttons -->
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">Target Frequency</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                            <button data-binaural="delta" class="btn-brainwave flex flex-col items-center p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition">
+                                <span class="font-bold text-slate-200 text-xs">Delta</span>
+                                <span class="text-[10px] text-slate-500 font-mono">2.5 Hz</span>
+                            </button>
+                            <button data-binaural="theta" class="btn-brainwave flex flex-col items-center p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition">
+                                <span class="font-bold text-slate-200 text-xs">Theta</span>
+                                <span class="text-[10px] text-slate-500 font-mono">6.0 Hz</span>
+                            </button>
+                            <button data-binaural="alpha" class="btn-brainwave active flex flex-col items-center p-2.5 rounded-lg bg-slate-950 border border-brand-500/80 transition">
+                                <span class="font-bold text-brand-400 text-xs">Alpha</span>
+                                <span class="text-[10px] text-slate-500 font-mono">10.0 Hz</span>
+                            </button>
+                            <button data-binaural="beta" class="btn-brainwave flex flex-col items-center p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition">
+                                <span class="font-bold text-slate-200 text-xs">Beta</span>
+                                <span class="text-[10px] text-slate-500 font-mono">20.0 Hz</span>
+                            </button>
+                            <button data-binaural="gamma" class="btn-brainwave flex flex-col items-center p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition">
+                                <span class="font-bold text-slate-200 text-xs">Gamma</span>
+                                <span class="text-[10px] text-slate-500 font-mono">40.0 Hz</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-1">
+                        <!-- Carrier Pitch Frequency -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Tone Pitch</span>
+                                <span id="lbl-carrier-freq" class="font-mono text-brand-400">200 Hz</span>
+                            </div>
+                            <input type="range" id="slider-carrier-freq" min="80" max="500" step="1" value="200" class="w-full">
+                        </div>
+
+                        <!-- Fine Beat Frequency Slider -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Beat Frequency</span>
+                                <span id="lbl-beat-freq" class="font-mono text-brand-400">10.0 Hz</span>
+                            </div>
+                            <input type="range" id="slider-beat-freq" min="0.5" max="45" step="0.5" value="10.0" class="w-full">
+                        </div>
+
+                        <!-- Binaural Volume -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="font-medium text-slate-300">Volume</span>
+                                <span id="lbl-binaural-volume" class="font-mono text-brand-400">15%</span>
+                            </div>
+                            <input type="range" id="slider-binaural-volume" min="0" max="0.5" step="0.01" value="0.15" class="w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: 10-BAND EQUALIZER & MASTER MODULATION -->
+            <div id="tab-equalizer" class="tab-page hidden">
+                <div class="glass-panel rounded-xl p-5 space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-simple text-slate-400"></i> 10-Band Equalizer
+                            </h3>
+                        </div>
+                        <button id="btn-reset-eq" class="px-3 py-1 rounded bg-slate-950 text-xs text-slate-300 hover:text-white border border-slate-800 transition">
+                            Reset EQ
+                        </button>
+                    </div>
+
+                    <!-- EQ Sliders Grid -->
+                    <div class="grid grid-cols-5 sm:grid-cols-10 gap-2 py-4 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                        <!-- Populated by JS -->
+                        <div id="eq-bands-container" class="contents"></div>
+                    </div>
+
+                    <!-- Master Dynamics & Filter Modulation -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+                        <!-- Dynamic LFO Sweeper -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Filter Sweep (LFO)</h4>
+                                <input type="checkbox" id="toggle-lfo-active" class="accent-brand-500">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-400">Rate</span>
+                                    <span id="lbl-lfo-rate" class="font-mono text-brand-400">0.10 Hz</span>
+                                </div>
+                                <input type="range" id="slider-lfo-rate" min="0.01" max="1.0" step="0.01" value="0.10" class="w-full">
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Compression & Stereo Width -->
+                        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-3">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stereo Width</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-400">Width</span>
+                                    <span id="lbl-stereo-width" class="font-mono text-brand-400">100%</span>
+                                </div>
+                                <input type="range" id="slider-stereo-width" min="0" max="2" step="0.05" value="1" class="w-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: POMODORO & FOCUS TIMER -->
+            <div id="tab-timer" class="tab-page hidden">
+                <div class="glass-panel rounded-xl p-6 max-w-xl mx-auto space-y-5 text-center">
+                    <h3 class="text-sm font-bold text-white flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-hourglass-half text-slate-400"></i> Focus Timer
+                    </h3>
+
+                    <!-- Display Clock -->
+                    <div class="py-6 bg-slate-950 rounded-xl border border-slate-800">
+                        <div id="pomo-timer-display" class="font-mono text-5xl font-bold text-slate-100 tracking-wider">
+                            25:00
+                        </div>
+                        <span id="pomo-mode-label" class="inline-block mt-3 px-3 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                            Focus Session
+                        </span>
+                    </div>
+
+                    <!-- Timer Controls -->
+                    <div class="flex items-center justify-center space-x-3">
+                        <button id="btn-pomo-toggle" class="px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition active:scale-95 text-xs flex items-center gap-2">
+                            <i id="icon-pomo-play" class="fa-solid fa-play"></i>
+                            <span id="lbl-pomo-play">Start</span>
+                        </button>
+                        <button id="btn-pomo-reset" class="px-4 py-2 rounded-lg bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800 transition text-xs">
+                            <i class="fa-solid fa-rotate-right"></i> Reset
+                        </button>
+                    </div>
+
+                    <!-- Session Presets -->
+                    <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800">
+                        <button data-pomo-min="25" class="btn-pomo-preset p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-300">
+                            25m Focus
+                        </button>
+                        <button data-pomo-min="50" class="btn-pomo-preset p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-300">
+                            50m Sprint
+                        </button>
+                        <button data-pomo-min="5" class="btn-pomo-preset p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-300">
+                            5m Break
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER STATUS BAR -->
+    <footer class="mt-auto border-t border-slate-800/80 bg-slate-900/90 py-2.5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <div class="flex items-center space-x-3">
+                <span class="flex items-center gap-1.5">
+                    Engine: <strong id="lbl-engine-status" class="text-slate-400">Ready</strong>
+                </span>
+                <span>•</span>
+                <span>Sample Rate: <strong id="lbl-sample-rate" class="text-slate-400">48000 Hz</strong></span>
+            </div>
+            <div>
+                <span>Audio Synthesizer</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL: SAVE PRESET -->
+    <div id="modal-save-preset" class="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-xl max-w-sm w-full p-5 space-y-4 border border-slate-800">
+            <h3 class="text-sm font-bold text-white">Save Custom Preset</h3>
+            <div>
+                <label class="text-xs font-semibold text-slate-400 block mb-1">Preset Name</label>
+                <input type="text" id="input-preset-name" placeholder="e.g. Focus Mix 1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:border-brand-500 focus:outline-none">
+            </div>
+            <div class="flex justify-end space-x-2 pt-1">
+                <button id="btn-cancel-save" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700">Cancel</button>
+                <button id="btn-confirm-save" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs hover:bg-brand-500">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: SLEEP TIMER -->
+    <div id="modal-sleep-timer" class="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-xl max-w-xs w-full p-4 space-y-3 border border-slate-800 text-center">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                    <i class="fa-regular fa-clock text-slate-400"></i> Sleep Fade-Out Timer
+                </h3>
+                <button id="btn-close-sleep-modal" class="text-slate-400 hover:text-white text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button data-sleep-min="15" class="btn-select-sleep p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200">15 Min</button>
+                <button data-sleep-min="30" class="btn-select-sleep p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200">30 Min</button>
+                <button data-sleep-min="45" class="btn-select-sleep p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200">45 Min</button>
+                <button data-sleep-min="60" class="btn-select-sleep p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200">60 Min</button>
+            </div>
+            <button id="btn-cancel-sleep-timer" class="w-full py-1.5 rounded-lg bg-slate-950 hover:bg-slate-900 text-slate-400 text-xs border border-slate-800 transition">
+                Turn Off Timer
+            </button>
+        </div>
+    </div>
+
+    <!-- IN-APP TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300 ease-out pointer-events-none hidden">
+        <div class="glass-panel px-3.5 py-2.5 rounded-lg border border-slate-700 shadow-xl flex items-center space-x-2.5 text-xs text-slate-200">
+            <i class="fa-solid fa-bell text-brand-400"></i>
+            <span id="toast-message">Notification message</span>
+        </div>
+    </div>
+
+    <!-- AUDIO SYNTHESIS & CORE APPLICATION JAVASCRIPT -->
+    <script>
+        /**
+         * AURASYNTH PRO - AUDIO ENGINE & INTERFACE
+         * High-Performance Granular Noise & Ambience Generator
+         */
+
+        // Global Audio Context & State
+        let ctx = null;
+        let masterGain = null;
+        let limiterNode = null;
+        let analyzerNode = null;
+        let lfoNode = null;
+        let lfoGainNode = null;
+        let masterFilter = null;
+        let isPlaying = false;
+
+        // Mute & Sleep Timer State
+        let isMuted = false;
+        let preMuteVolume = 0.75;
+        let sleepTimerSeconds = 0;
+        let sleepTimerInterval = null;
+
+        // Custom LocalStorage Presets Registry
+        let customPresets = JSON.parse(localStorage.getItem('aurasynth_custom_presets') || '{}');
+
+        // Equalizer Nodes Array & Gain State
+        const eqFrequencies = [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+        let eqNodes = [];
+        let eqGains = new Array(10).fill(0);
+
+        // Dynamic Sound Generators Registry
+        const soundGenerators = {
+            // COLOR NOISE SPECTRUM
+            white: { name: 'White Noise', category: 'color', type: 'noise', vol: 0, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', desc: 'Equal energy' },
+            pink: { name: 'Pink Noise', category: 'color', type: 'noise', vol: 0.35, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', desc: '-3dB/octave slope' },
+            brown: { name: 'Brown Noise', category: 'color', type: 'noise', vol: 0.40, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', desc: 'Deep warm sub-bass' },
+            blue: { name: 'Blue Noise', category: 'color', type: 'noise', vol: 0, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', desc: '+3dB high frequency' },
+            violet: { name: 'Violet Noise', category: 'color', type: 'noise', vol: 0, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', desc: 'High frequency boost' },
+            green: { name: 'Green Noise', category: 'color', type: 'noise', vol: 0, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', desc: 'Mid frequency spectrum' },
+            
+            // PROCEDURAL AMBIENT ELEMENTS
+            rain: { name: 'Rainfall', category: 'ambient', type: 'synth_rain', vol: 0.25, pan: -0.2, color: 'bg-slate-800 text-slate-300 border border-slate-700', icon: 'fa-cloud-rain' },
+            crackle: { name: 'Fireplace', category: 'ambient', type: 'synth_fire', vol: 0.15, pan: 0.2, color: 'bg-slate-800 text-slate-300 border border-slate-700', icon: 'fa-fire' },
+            waves: { name: 'Ocean Waves', category: 'ambient', type: 'synth_waves', vol: 0.20, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', icon: 'fa-water' },
+            wind: { name: 'Wind', category: 'ambient', type: 'synth_wind', vol: 0, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', icon: 'fa-wind' },
+            stream: { name: 'Stream', category: 'ambient', type: 'synth_stream', vol: 0, pan: 0.3, color: 'bg-slate-800 text-slate-300 border border-slate-700', icon: 'fa-droplet' },
+            space: { name: 'Drone', category: 'ambient', type: 'synth_space', vol: 0, pan: 0, color: 'bg-slate-800 text-slate-300 border border-slate-700', icon: 'fa-user-astronaut' }
+        };
+
+        // Granular Engine State
+        const granularState = {
+            active: false,
+            sourceBufferName: 'pink',
+            grainSizeMs: 80,
+            densityPerSec: 25,
+            pitchRandomSemitones: 3,
+            panJitter: 0.75,
+            volume: 0.5,
+            timerId: null
+        };
+
+        // Binaural Beats Engine State
+        const binauralState = {
+            active: false,
+            carrierFreq: 200,
+            beatFreq: 10.0, // Alpha
+            volume: 0.15,
+            oscLeft: null,
+            oscRight: null,
+            gainNode: null,
+            panLeftNode: null,
+            panRightNode: null
+        };
+
+        // Pomodoro State
+        const pomodoroState = {
+            durationMinutes: 25,
+            remainingSeconds: 25 * 60,
+            isRunning: false,
+            timerInterval: null
+        };
+
+        // Noise Buffer Cache
+        const noiseBuffers = {};
+
+        // Sound Engine Nodes Map
+        const audioNodes = {};
+
+        /* =========================================================================
+           1. WEB AUDIO API INITIALIZATION
+           ========================================================================= */
+        function initAudioContext() {
+            if (ctx) return;
+
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            ctx = new AudioCtx();
+
+            // Master Limiter Node (prevents clipping)
+            limiterNode = ctx.createDynamicsCompressor();
+            limiterNode.threshold.setValueAtTime(-1.0, ctx.currentTime);
+            limiterNode.knee.setValueAtTime(0, ctx.currentTime);
+            limiterNode.ratio.setValueAtTime(20, ctx.currentTime);
+            limiterNode.attack.setValueAtTime(0.003, ctx.currentTime);
+            limiterNode.release.setValueAtTime(0.1, ctx.currentTime);
+
+            // Master Gain Node
+            masterGain = ctx.createGain();
+            const masterVol = parseFloat(document.getElementById('slider-master-volume').value);
+            masterGain.gain.setValueAtTime(masterVol, ctx.currentTime);
+
+            // Master Lowpass Filter Node
+            masterFilter = ctx.createBiquadFilter();
+            masterFilter.type = 'lowpass';
+            masterFilter.frequency.setValueAtTime(16000, ctx.currentTime);
+
+            // Master LFO Oscillating Filter Sweep Node
+            lfoNode = ctx.createOscillator();
+            lfoGainNode = ctx.createGain();
+            lfoNode.type = 'sine';
+            lfoNode.frequency.setValueAtTime(0.10, ctx.currentTime);
+            lfoGainNode.gain.setValueAtTime(0, ctx.currentTime); // Off by default
+            lfoNode.connect(lfoGainNode);
+            lfoGainNode.connect(masterFilter.frequency);
+            lfoNode.start();
+
+            // Analyser Node for Spectrum Visualizer
+            analyzerNode = ctx.createAnalyser();
+            analyzerNode.fftSize = 128;
+            analyzerNode.smoothingTimeConstant = 0.8;
+
+            // Connect EQ Chain to Master Filter -> Limiter -> Master Gain -> Destination
+            let lastEqNode = buildEqualizerChain();
+            lastEqNode.connect(masterFilter);
+            masterFilter.connect(limiterNode);
+            limiterNode.connect(masterGain);
+            masterGain.connect(analyzerNode);
+            analyzerNode.connect(ctx.destination);
+
+            // Pre-generate Noise Audio Buffers
+            generateNoiseBuffers();
+
+            // Update UI status
+            document.getElementById('lbl-engine-status').textContent = 'Running';
+            document.getElementById('lbl-sample-rate').textContent = `${ctx.sampleRate} Hz`;
+            document.getElementById('visualizer-placeholder').classList.add('hidden');
+
+            // Start Canvas Visualizer Loop
+            startVisualizerLoop();
+        }
+
+        /* =========================================================================
+           2. PROCEDURAL NOISE BUFFER GENERATORS (PURE SYNTHESIS)
+           ========================================================================= */
+        function generateNoiseBuffers() {
+            const bufferSize = ctx.sampleRate * 5; // 5-second seamless loop buffer
+
+            // White Noise
+            const whiteBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const wData = whiteBuf.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                wData[i] = Math.random() * 2 - 1;
+            }
+            noiseBuffers['white'] = whiteBuf;
+
+            // Pink Noise (Voss-McCartney Algorithm)
+            const pinkBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const pData = pinkBuf.getChannelData(0);
+            let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                let white = Math.random() * 2 - 1;
+                b0 = 0.99886 * b0 + white * 0.0555179;
+                b1 = 0.99332 * b1 + white * 0.0750759;
+                b2 = 0.96900 * b2 + white * 0.1538520;
+                b3 = 0.86650 * b3 + white * 0.3104856;
+                b4 = 0.55000 * b4 + white * 0.5329522;
+                b5 = -0.7616 * b5 - white * 0.0168980;
+                pData[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+                b6 = white * 0.115926;
+            }
+            noiseBuffers['pink'] = pinkBuf;
+
+            // Brown Noise (Integrated White Noise)
+            const brownBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const brData = brownBuf.getChannelData(0);
+            let lastOut = 0.0;
+            for (let i = 0; i < bufferSize; i++) {
+                let white = Math.random() * 2 - 1;
+                lastOut = (lastOut + (0.02 * white)) / 1.02;
+                brData[i] = lastOut * 3.5;
+            }
+            noiseBuffers['brown'] = brownBuf;
+
+            // Blue Noise (High-pass differentiated white noise)
+            const blueBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const blData = blueBuf.getChannelData(0);
+            let prevWhite = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                let white = Math.random() * 2 - 1;
+                blData[i] = (white - prevWhite) * 0.5;
+                prevWhite = white;
+            }
+            noiseBuffers['blue'] = blueBuf;
+
+            // Violet Noise (Double differentiated white noise)
+            const violetBuf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const vData = violetBuf.getChannelData(0);
+            let p1 = 0, p2 = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                let white = Math.random() * 2 - 1;
+                vData[i] = (white - 2 * p1 + p2) * 0.25;
+                p2 = p1;
+                p1 = white;
+            }
+            noiseBuffers['violet'] = violetBuf;
+        }
+
+        /* =========================================================================
+           3. EQUALIZER BUILDER
+           ========================================================================= */
+        function buildEqualizerChain() {
+            eqNodes = eqFrequencies.map((freq, index) => {
+                const filter = ctx.createBiquadFilter();
+                if (index === 0) {
+                    filter.type = 'lowshelf';
+                } else if (index === eqFrequencies.length - 1) {
+                    filter.type = 'highshelf';
+                } else {
+                    filter.type = 'peaking';
+                    filter.Q.setValueAtTime(1.4, ctx.currentTime);
+                }
+                filter.frequency.setValueAtTime(freq, ctx.currentTime);
+                filter.gain.setValueAtTime(eqGains[index] || 0, ctx.currentTime);
+                return filter;
+            });
+
+            // Chain EQ nodes in series
+            for (let i = 0; i < eqNodes.length - 1; i++) {
+                eqNodes[i].connect(eqNodes[i + 1]);
+            }
+            // Return the LAST node of the chain so audio passes through all filters into masterFilter
+            return eqNodes[eqNodes.length - 1];
+        }
+
+        /* =========================================================================
+           4. AUDIO GENERATORS MANAGER (START / STOP / VOLUME)
+           ========================================================================= */
+        function startAllActiveGenerators() {
+            if (!ctx) initAudioContext();
+            if (ctx.state === 'suspended') ctx.resume();
+
+            Object.keys(soundGenerators).forEach(key => {
+                const gen = soundGenerators[key];
+                if (gen.vol > 0) {
+                    startGenerator(key);
+                }
+            });
+
+            if (granularState.active) startGranularEngine();
+            if (binauralState.active) startBinauralEngine();
+
+            isPlaying = true;
+            updateMasterPlayButtonUI();
+        }
+
+        function stopAllGenerators() {
+            Object.keys(audioNodes).forEach(key => {
+                stopGenerator(key);
+            });
+            stopGranularEngine();
+            stopBinauralEngine();
+
+            isPlaying = false;
+            updateMasterPlayButtonUI();
+        }
+
+        function startGenerator(key) {
+            if (!ctx || audioNodes[key]) return;
+
+            const gen = soundGenerators[key];
+            const channelGain = ctx.createGain();
+            channelGain.gain.setValueAtTime(gen.vol, ctx.currentTime);
+
+            const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+            if (panner) {
+                panner.pan.setValueAtTime(gen.pan, ctx.currentTime);
+                channelGain.connect(panner);
+                panner.connect(eqNodes[0]);
+            } else {
+                channelGain.connect(eqNodes[0]);
+            }
+
+            if (gen.category === 'color') {
+                // Loop Color Noise Buffer Source
+                const bufferSource = ctx.createBufferSource();
+                bufferSource.buffer = noiseBuffers[key] || noiseBuffers['pink'];
+                bufferSource.loop = true;
+                bufferSource.connect(channelGain);
+                bufferSource.start();
+
+                audioNodes[key] = { source: bufferSource, gain: channelGain, panner: panner };
+            } 
+            else if (gen.category === 'ambient') {
+                // Procedural Synthesis Architectures for Ambient Sounds
+                let synthNode = setupProceduralAmbientNode(key, channelGain);
+                audioNodes[key] = { source: synthNode, gain: channelGain, panner: panner };
+            }
+
+            updateActiveChannelCount();
+        }
+
+        function stopGenerator(key) {
+            if (audioNodes[key]) {
+                const nodeObj = audioNodes[key];
+                if (nodeObj.source && nodeObj.source.stop) {
+                    try { nodeObj.source.stop(); } catch(e){}
+                }
+                if (nodeObj.customCleanup) nodeObj.customCleanup();
+                delete audioNodes[key];
+            }
+            updateActiveChannelCount();
+        }
+
+        function setChannelVolume(key, vol) {
+            soundGenerators[key].vol = vol;
+            if (vol > 0) {
+                if (!audioNodes[key] && isPlaying) {
+                    startGenerator(key);
+                } else if (audioNodes[key]) {
+                    audioNodes[key].gain.gain.setTargetAtTime(vol, ctx.currentTime, 0.05);
+                }
+            } else {
+                if (audioNodes[key]) {
+                    audioNodes[key].gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+                    setTimeout(() => {
+                        if (soundGenerators[key].vol === 0) stopGenerator(key);
+                    }, 60);
+                }
+            }
+            updateActiveChannelCount();
+        }
+
+        function setChannelPan(key, panVal) {
+            soundGenerators[key].pan = panVal;
+            if (audioNodes[key] && audioNodes[key].panner) {
+                audioNodes[key].panner.pan.setTargetAtTime(panVal, ctx.currentTime, 0.05);
+            }
+        }
+
+        /* =========================================================================
+           5. PROCEDURAL AMBIENT SYNTHESIS ROUTINES (UPGRADED CRACKLE & RAIN)
+           ========================================================================= */
+        function setupProceduralAmbientNode(key, destinationGain) {
+            if (key === 'rain') {
+                // Rain: Pink noise with dynamic lowpass filter & random rain transient drops
+                const src = ctx.createBufferSource();
+                src.buffer = noiseBuffers['pink'];
+                src.loop = true;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1400, ctx.currentTime);
+
+                src.connect(filter);
+                filter.connect(destinationGain);
+                src.start();
+
+                // Dynamic droplet transients
+                let rainActive = true;
+                function triggerRainDrop() {
+                    if (!rainActive || !ctx || soundGenerators['rain'].vol <= 0) return;
+                    const now = ctx.currentTime;
+                    const dropOsc = ctx.createOscillator();
+                    const dropGain = ctx.createGain();
+                    dropOsc.frequency.setValueAtTime(1200 + Math.random() * 1800, now);
+                    dropGain.gain.setValueAtTime(0.04 * soundGenerators['rain'].vol, now);
+                    dropGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.02 + Math.random() * 0.03);
+
+                    dropOsc.connect(dropGain);
+                    dropGain.connect(destinationGain);
+                    dropOsc.start(now);
+                    dropOsc.stop(now + 0.06);
+
+                    setTimeout(triggerRainDrop, 30 + Math.random() * 150);
+                }
+                triggerRainDrop();
+
+                return { stop: () => { rainActive = false; try { src.stop(); } catch(e){} } };
+            } 
+            else if (key === 'crackle') {
+                // Fireplace Crackle: Low rumble brown noise base + Poisson random wood pops
+                const brownSrc = ctx.createBufferSource();
+                brownSrc.buffer = noiseBuffers['brown'];
+                brownSrc.loop = true;
+
+                const lpFilter = ctx.createBiquadFilter();
+                lpFilter.type = 'lowpass';
+                lpFilter.frequency.setValueAtTime(450, ctx.currentTime);
+                brownSrc.connect(lpFilter);
+                lpFilter.connect(destinationGain);
+                brownSrc.start();
+
+                // Poisson burst timer for randomized micro crackle pops
+                let crackleActive = true;
+                function triggerPop() {
+                    if (!crackleActive || !ctx || soundGenerators['crackle'].vol <= 0) return;
+                    const now = ctx.currentTime;
+                    const popOsc = ctx.createOscillator();
+                    const popGain = ctx.createGain();
+                    
+                    popOsc.frequency.setValueAtTime(600 + Math.random() * 3200, now);
+                    popGain.gain.setValueAtTime(0.09 * soundGenerators['crackle'].vol, now);
+                    popGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.01 + Math.random() * 0.025);
+
+                    popOsc.connect(popGain);
+                    popGain.connect(destinationGain);
+                    popOsc.start(now);
+                    popOsc.stop(now + 0.04);
+
+                    setTimeout(triggerPop, 40 + Math.random() * 320);
+                }
+                triggerPop();
+
+                return { stop: () => { crackleActive = false; try { brownSrc.stop(); } catch(e){} } };
+            }
+            else if (key === 'waves') {
+                // Waves: Pink noise modulated by dynamic low frequency oscillator filter sweep
+                const src = ctx.createBufferSource();
+                src.buffer = noiseBuffers['pink'];
+                src.loop = true;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, ctx.currentTime);
+
+                // Waves LFO
+                const waveLfo = ctx.createOscillator();
+                waveLfo.frequency.setValueAtTime(0.12, ctx.currentTime); // 8-second wave cycle
+                const waveLfoGain = ctx.createGain();
+                waveLfoGain.gain.setValueAtTime(350, ctx.currentTime);
+
+                waveLfo.connect(waveLfoGain);
+                waveLfoGain.connect(filter.frequency);
+                waveLfo.start();
+
+                src.connect(filter);
+                filter.connect(destinationGain);
+                src.start();
+                return src;
+            }
+            else if (key === 'wind') {
+                // Wind: Resonant bandpass noise with slow LFO
+                const src = ctx.createBufferSource();
+                src.buffer = noiseBuffers['pink'];
+                src.loop = true;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.Q.setValueAtTime(3.0, ctx.currentTime);
+                filter.frequency.setValueAtTime(500, ctx.currentTime);
+
+                const windLfo = ctx.createOscillator();
+                windLfo.frequency.setValueAtTime(0.08, ctx.currentTime);
+                const windLfoGain = ctx.createGain();
+                windLfoGain.gain.setValueAtTime(400, ctx.currentTime);
+
+                windLfo.connect(windLfoGain);
+                windLfoGain.connect(filter.frequency);
+                windLfo.start();
+
+                src.connect(filter);
+                filter.connect(destinationGain);
+                src.start();
+                return src;
+            }
+            else if (key === 'stream') {
+                // Water Stream: High-pass blue noise
+                const src = ctx.createBufferSource();
+                src.buffer = noiseBuffers['blue'];
+                src.loop = true;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1800, ctx.currentTime);
+                filter.Q.setValueAtTime(1.0, ctx.currentTime);
+
+                src.connect(filter);
+                filter.connect(destinationGain);
+                src.start();
+                return src;
+            }
+            else if (key === 'space') {
+                // Cosmic Drone: Sub-bass oscillator stack
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                osc1.type = 'sine';
+                osc2.type = 'triangle';
+                osc1.frequency.setValueAtTime(55, ctx.currentTime); // A1 note
+                osc2.frequency.setValueAtTime(110, ctx.currentTime);
+
+                osc1.connect(destinationGain);
+                osc2.connect(destinationGain);
+                osc1.start();
+                osc2.start();
+
+                return { stop: () => { osc1.stop(); osc2.stop(); } };
+            }
+        }
+
+        /* =========================================================================
+           6. GRANULAR SYNTHESIZER ENGINE IMPLEMENTATION
+           ========================================================================= */
+        function startGranularEngine() {
+            if (!ctx) initAudioContext();
+            granularState.active = true;
+            document.getElementById('lbl-granular-status').textContent = 'Active';
+            document.getElementById('lbl-granular-status').className = 'text-xs font-semibold uppercase text-brand-400';
+
+            scheduleNextGrain();
+        }
+
+        function stopGranularEngine() {
+            granularState.active = false;
+            if (granularState.timerId) clearTimeout(granularState.timerId);
+            document.getElementById('lbl-granular-status').textContent = 'Disabled';
+            document.getElementById('lbl-granular-status').className = 'text-xs font-semibold uppercase text-slate-400';
+        }
+
+        function scheduleNextGrain() {
+            if (!granularState.active || !isPlaying) return;
+
+            spawnGrain();
+
+            // Interval based on density
+            const intervalMs = (1000 / granularState.densityPerSec) * (0.8 + Math.random() * 0.4);
+            granularState.timerId = setTimeout(scheduleNextGrain, intervalMs);
+        }
+
+        function spawnGrain() {
+            if (!ctx) return;
+
+            const baseBuffer = noiseBuffers[granularState.sourceBufferName] || noiseBuffers['pink'];
+            const grainDurSec = granularState.grainSizeMs / 1000.0;
+
+            const grainSource = ctx.createBufferSource();
+            grainSource.buffer = baseBuffer;
+
+            // Random offset start inside source buffer
+            const offset = Math.random() * Math.max(0, baseBuffer.duration - grainDurSec);
+
+            // Random pitch modulation
+            const semitones = (Math.random() * 2 - 1) * granularState.pitchRandomSemitones;
+            grainSource.playbackRate.setValueAtTime(Math.pow(2, semitones / 12), ctx.currentTime);
+
+            // Grain Gain Envelope (Gaussian Window Approximation)
+            const grainGain = ctx.createGain();
+            const now = ctx.currentTime;
+            grainGain.gain.setValueAtTime(0, now);
+            grainGain.gain.linearRampToValueAtTime(granularState.volume * 0.4, now + grainDurSec * 0.5);
+            grainGain.gain.linearRampToValueAtTime(0, now + grainDurSec);
+
+            // Stereo Panner Jitter
+            const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+            const panVal = (Math.random() * 2 - 1) * granularState.panJitter;
+
+            grainSource.connect(grainGain);
+            if (panner) {
+                panner.pan.setValueAtTime(panVal, now);
+                grainGain.connect(panner);
+                panner.connect(eqNodes[0]);
+            } else {
+                grainGain.connect(eqNodes[0]);
+            }
+
+            grainSource.start(now, offset, grainDurSec);
+        }
+
+        /* =========================================================================
+           7. BINAURAL BEATS ENGINE IMPLEMENTATION
+           ========================================================================= */
+        function startBinauralEngine() {
+            if (!ctx) initAudioContext();
+            if (binauralState.gainNode) stopBinauralEngine();
+
+            binauralState.active = true;
+            document.getElementById('lbl-binaural-status').textContent = 'Active';
+            document.getElementById('lbl-binaural-status').className = 'text-xs font-semibold uppercase text-brand-400';
+
+            const carrier = binauralState.carrierFreq;
+            const beat = binauralState.beatFreq;
+
+            const freqLeft = carrier - (beat / 2);
+            const freqRight = carrier + (beat / 2);
+
+            binauralState.oscLeft = ctx.createOscillator();
+            binauralState.oscRight = ctx.createOscillator();
+
+            binauralState.oscLeft.type = 'sine';
+            binauralState.oscRight.type = 'sine';
+
+            binauralState.oscLeft.frequency.setValueAtTime(freqLeft, ctx.currentTime);
+            binauralState.oscRight.frequency.setValueAtTime(freqRight, ctx.currentTime);
+
+            binauralState.panLeftNode = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+            binauralState.panRightNode = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+
+            binauralState.gainNode = ctx.createGain();
+            binauralState.gainNode.gain.setValueAtTime(binauralState.volume, ctx.currentTime);
+
+            if (binauralState.panLeftNode && binauralState.panRightNode) {
+                binauralState.panLeftNode.pan.setValueAtTime(-1, ctx.currentTime); // Hard Left
+                binauralState.panRightNode.pan.setValueAtTime(1, ctx.currentTime);  // Hard Right
+
+                binauralState.oscLeft.connect(binauralState.panLeftNode);
+                binauralState.oscRight.connect(binauralState.panRightNode);
+
+                binauralState.panLeftNode.connect(binauralState.gainNode);
+                binauralState.panRightNode.connect(binauralState.gainNode);
+            } else {
+                binauralState.oscLeft.connect(binauralState.gainNode);
+                binauralState.oscRight.connect(binauralState.gainNode);
+            }
+
+            binauralState.gainNode.connect(eqNodes[0]);
+
+            binauralState.oscLeft.start();
+            binauralState.oscRight.start();
+        }
+
+        function stopBinauralEngine() {
+            binauralState.active = false;
+            document.getElementById('lbl-binaural-status').textContent = 'Disabled';
+            document.getElementById('lbl-binaural-status').className = 'text-xs font-semibold uppercase text-slate-400';
+
+            if (binauralState.oscLeft) {
+                try { binauralState.oscLeft.stop(); binauralState.oscRight.stop(); } catch(e){}
+                binauralState.oscLeft = null;
+                binauralState.oscRight = null;
+            }
+        }
+
+        function updateBinauralFrequencies() {
+            if (!binauralState.active || !ctx) return;
+            const carrier = binauralState.carrierFreq;
+            const beat = binauralState.beatFreq;
+
+            const freqLeft = carrier - (beat / 2);
+            const freqRight = carrier + (beat / 2);
+
+            if (binauralState.oscLeft) binauralState.oscLeft.frequency.setTargetAtTime(freqLeft, ctx.currentTime, 0.05);
+            if (binauralState.oscRight) binauralState.oscRight.frequency.setTargetAtTime(freqRight, ctx.currentTime, 0.05);
+        }
+
+        /* =========================================================================
+           8. CANVAS AUDIO VISUALIZER (SPECTRUM & OSCILLOSCOPE)
+           ========================================================================= */
+        let visMode = 'spectrum'; // 'spectrum' | 'waveform'
+
+        function startVisualizerLoop() {
+            const canvas = document.getElementById('visualizer-canvas');
+            const canvasCtx = canvas.getContext('2d');
+
+            function render() {
+                requestAnimationFrame(render);
+                if (!ctx || !analyzerNode) return;
+
+                // Auto resize canvas resolution
+                if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+                    canvas.width = canvas.clientWidth;
+                    canvas.height = canvas.clientHeight;
+                }
+
+                const width = canvas.width;
+                const height = canvas.height;
+
+                canvasCtx.clearRect(0, 0, width, height);
+
+                if (visMode === 'spectrum') {
+                    const bufferLength = analyzerNode.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    analyzerNode.getByteFrequencyData(dataArray);
+
+                    const barWidth = (width / bufferLength) * 2.2;
+                    let x = 0;
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const barHeight = (dataArray[i] / 255) * height;
+
+                        const gradient = canvasCtx.createLinearGradient(0, height, 0, 0);
+                        gradient.addColorStop(0, '#059669');
+                        gradient.addColorStop(1, '#34d399');
+
+                        canvasCtx.fillStyle = gradient;
+                        canvasCtx.fillRect(x, height - barHeight, barWidth - 1, barHeight);
+
+                        x += barWidth;
+                    }
+                } else if (visMode === 'waveform') {
+                    const bufferLength = analyzerNode.fftSize;
+                    const dataArray = new Uint8Array(bufferLength);
+                    analyzerNode.getByteTimeDomainData(dataArray);
+
+                    canvasCtx.lineWidth = 1.5;
+                    canvasCtx.strokeStyle = '#34d399';
+                    canvasCtx.beginPath();
+
+                    const sliceWidth = width * 1.0 / bufferLength;
+                    let x = 0;
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 128.0;
+                        const y = v * height / 2;
+
+                        if (i === 0) canvasCtx.moveTo(x, y);
+                        else canvasCtx.lineTo(x, y);
+
+                        x += sliceWidth;
+                    }
+
+                    canvasCtx.lineTo(width, height / 2);
+                    canvasCtx.stroke();
+                }
+            }
+            render();
+        }
+
+        /* =========================================================================
+           9. DOM BUILDERS & DYNAMIC UI POPULATION
+           ========================================================================= */
+        function renderGeneratorCards() {
+            const colorContainer = document.getElementById('grid-color-noises');
+            const ambientContainer = document.getElementById('grid-ambient-elements');
+
+            colorContainer.innerHTML = '';
+            ambientContainer.innerHTML = '';
+
+            Object.keys(soundGenerators).forEach(key => {
+                const item = soundGenerators[key];
+                const isColor = item.category === 'color';
+
+                const cardHtml = `
+                    <div class="bg-slate-950 rounded-lg p-3.5 border border-slate-800 hover:border-slate-700 transition space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-6 h-6 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300 text-xs">
+                                    <i class="fa-solid ${item.icon || 'fa-sliders'}"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-200">${item.name}</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Volume Slider -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                                <span>Gain</span>
+                                <span id="val-vol-${key}">${Math.round(item.vol * 100)}%</span>
+                            </div>
+                            <input type="range" id="slider-vol-${key}" min="0" max="1" step="0.01" value="${item.vol}" class="w-full accent-brand-500">
+                        </div>
+
+                        <!-- Stereo Panner -->
+                        <div class="space-y-1 pt-1 border-t border-slate-900">
+                            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                                <span>Pan L</span>
+                                <span id="val-pan-${key}">${item.pan > 0 ? 'R' + Math.round(item.pan*100) : item.pan < 0 ? 'L' + Math.abs(Math.round(item.pan*100)) : 'Center'}</span>
+                                <span>Pan R</span>
+                            </div>
+                            <input type="range" id="slider-pan-${key}" min="-1" max="1" step="0.05" value="${item.pan}" class="w-full h-1 accent-slate-500">
+                        </div>
+                    </div>
+                `;
+
+                if (isColor) colorContainer.insertAdjacentHTML('beforeend', cardHtml);
+                else ambientContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            // Bind Events to dynamic sliders
+            Object.keys(soundGenerators).forEach(key => {
+                const volSlider = document.getElementById(`slider-vol-${key}`);
+                const panSlider = document.getElementById(`slider-pan-${key}`);
+
+                volSlider.addEventListener('input', (e) => {
+                    const v = parseFloat(e.target.value);
+                    document.getElementById(`val-vol-${key}`).textContent = `${Math.round(v * 100)}%`;
+                    setChannelVolume(key, v);
+                });
+
+                panSlider.addEventListener('input', (e) => {
+                    const p = parseFloat(e.target.value);
+                    const label = p > 0 ? 'R' + Math.round(p*100) : p < 0 ? 'L' + Math.abs(Math.round(p*100)) : 'Center';
+                    document.getElementById(`val-pan-${key}`).textContent = label;
+                    setChannelPan(key, p);
+                });
+            });
+        }
+
+        function renderEQSliders() {
+            const container = document.getElementById('eq-bands-container');
+            container.innerHTML = '';
+
+            eqFrequencies.forEach((freq, idx) => {
+                const freqLabel = freq >= 1000 ? `${freq/1000}k` : `${freq}`;
+                const sliderHtml = `
+                    <div class="flex flex-col items-center space-y-2">
+                        <span class="text-[10px] font-mono text-slate-400" id="lbl-eq-val-${idx}">0dB</span>
+                        <input type="range" id="slider-eq-${idx}" min="-12" max="12" step="0.5" value="0" class="h-28 w-2 [writing-mode:vertical-lr] [direction:rtl] accent-emerald-500">
+                        <span class="text-[10px] font-mono text-slate-300 font-semibold">${freqLabel}Hz</span>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', sliderHtml);
+            });
+
+            // Bind EQ events
+            eqFrequencies.forEach((freq, idx) => {
+                const slider = document.getElementById(`slider-eq-${idx}`);
+                slider.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    eqGains[idx] = val;
+                    document.getElementById(`lbl-eq-val-${idx}`).textContent = `${val > 0 ? '+' : ''}${val}dB`;
+                    if (ctx && eqNodes[idx]) {
+                        eqNodes[idx].gain.setTargetAtTime(val, ctx.currentTime, 0.05);
+                    }
+                });
+            });
+        }
+
+        /* =========================================================================
+           10. PRESET SYSTEM & LOCALSTORAGE PRESETS
+           ========================================================================= */
+        const builtInPresets = {
+            deep_focus: {
+                name: 'Focus',
+                icon: 'fa-brain',
+                vol: { pink: 0.35, brown: 0.20, rain: 0.15 },
+                granular: { active: true, source: 'pink', size: 90, density: 20, pitch: 2 },
+                binaural: { active: true, carrier: 200, beat: 10.0, volume: 0.15 }
+            },
+            heavy_storm: {
+                name: 'Storm',
+                icon: 'fa-cloud-showers-heavy',
+                vol: { brown: 0.40, rain: 0.50, crackle: 0.20, wind: 0.25 },
+                granular: { active: false },
+                binaural: { active: false }
+            },
+            cosmic_drift: {
+                name: 'Space',
+                icon: 'fa-user-astronaut',
+                vol: { blue: 0.15, space: 0.60 },
+                granular: { active: true, source: 'blue', size: 150, density: 35, pitch: 5 },
+                binaural: { active: true, carrier: 150, beat: 6.0, volume: 0.12 }
+            },
+            zen_garden: {
+                name: 'Stream',
+                icon: 'fa-leaf',
+                vol: { green: 0.25, stream: 0.35 },
+                granular: { active: false },
+                binaural: { active: true, carrier: 220, beat: 7.83, volume: 0.10 }
+            }
+        };
+
+        function renderPresetsList() {
+            const container = document.getElementById('presets-container');
+            container.innerHTML = '';
+
+            // Render Built-in Presets
+            Object.keys(builtInPresets).forEach(key => {
+                const preset = builtInPresets[key];
+                const btnHtml = `
+                    <button data-preset="${key}" class="btn-load-preset p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition text-left flex items-center space-x-2">
+                        <div class="w-5 h-5 rounded bg-slate-900 flex items-center justify-center text-slate-400 text-xs">
+                            <i class="fa-solid ${preset.icon}"></i>
+                        </div>
+                        <span class="font-medium text-slate-300 truncate text-xs">${preset.name}</span>
+                    </button>
+                `;
+                container.insertAdjacentHTML('beforeend', btnHtml);
+            });
+
+            // Render Saved Custom LocalStorage Presets
+            Object.keys(customPresets).forEach(key => {
+                const preset = customPresets[key];
+                const btnHtml = `
+                    <div class="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition flex items-center justify-between group">
+                        <button data-custom-preset="${key}" class="btn-load-custom flex items-center space-x-2 truncate flex-1 text-left">
+                            <div class="w-5 h-5 rounded bg-slate-900 flex items-center justify-center text-slate-400 text-xs">
+                                <i class="fa-solid fa-bookmark"></i>
+                            </div>
+                            <span class="font-medium text-slate-300 truncate text-xs">${preset.name}</span>
+                        </button>
+                        <button data-delete-preset="${key}" class="btn-delete-custom text-slate-600 hover:text-rose-400 p-1 transition opacity-80 group-hover:opacity-100" title="Delete Preset">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', btnHtml);
+            });
+
+            // Bind Built-in Click Events
+            document.querySelectorAll('.btn-load-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const pKey = btn.getAttribute('data-preset');
+                    loadPreset(builtInPresets[pKey]);
+                    showToast(`Loaded Preset: ${builtInPresets[pKey].name}`);
+                });
+            });
+
+            // Bind Custom Load Events
+            document.querySelectorAll('.btn-load-custom').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const pKey = btn.getAttribute('data-custom-preset');
+                    if (customPresets[pKey]) {
+                        loadPreset(customPresets[pKey]);
+                        showToast(`Loaded Custom Preset: ${customPresets[pKey].name}`);
+                    }
+                });
+            });
+
+            // Bind Custom Delete Events
+            document.querySelectorAll('.btn-delete-custom').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const pKey = btn.getAttribute('data-delete-preset');
+                    if (customPresets[pKey]) {
+                        const name = customPresets[pKey].name;
+                        delete customPresets[pKey];
+                        localStorage.setItem('aurasynth_custom_presets', JSON.stringify(customPresets));
+                        renderPresetsList();
+                        showToast(`Deleted Preset: ${name}`);
+                    }
+                });
+            });
+        }
+
+        function loadPreset(preset) {
+            if (!ctx) initAudioContext();
+
+            // Reset volumes
+            Object.keys(soundGenerators).forEach(key => {
+                setChannelVolume(key, 0);
+                document.getElementById(`slider-vol-${key}`).value = 0;
+                document.getElementById(`val-vol-${key}`).textContent = '0%';
+            });
+
+            // Apply preset volumes
+            if (preset.vol) {
+                Object.keys(preset.vol).forEach(key => {
+                    const vol = preset.vol[key];
+                    setChannelVolume(key, vol);
+                    document.getElementById(`slider-vol-${key}`).value = vol;
+                    document.getElementById(`val-vol-${key}`).textContent = `${Math.round(vol * 100)}%`;
+                });
+            }
+
+            // Apply preset EQ if saved
+            if (preset.eq && Array.isArray(preset.eq)) {
+                eqFrequencies.forEach((freq, idx) => {
+                    const val = preset.eq[idx] !== undefined ? preset.eq[idx] : 0;
+                    eqGains[idx] = val;
+                    const slider = document.getElementById(`slider-eq-${idx}`);
+                    if (slider) slider.value = val;
+                    const label = document.getElementById(`lbl-eq-val-${idx}`);
+                    if (label) label.textContent = `${val > 0 ? '+' : ''}${val}dB`;
+                    if (ctx && eqNodes[idx]) {
+                        eqNodes[idx].gain.setTargetAtTime(val, ctx.currentTime, 0.05);
+                    }
+                });
+            }
+
+            // Granular
+            if (preset.granular && preset.granular.active) {
+                document.getElementById('toggle-granular-active').checked = true;
+                granularState.sourceBufferName = preset.granular.source || 'pink';
+                document.getElementById('select-grain-source').value = granularState.sourceBufferName;
+                startGranularEngine();
+            } else {
+                document.getElementById('toggle-granular-active').checked = false;
+                stopGranularEngine();
+            }
+
+            // Binaural
+            if (preset.binaural && preset.binaural.active) {
+                document.getElementById('toggle-binaural-active').checked = true;
+                binauralState.carrierFreq = preset.binaural.carrier || 200;
+                binauralState.beatFreq = preset.binaural.beat || 10.0;
+                document.getElementById('slider-carrier-freq').value = binauralState.carrierFreq;
+                document.getElementById('lbl-carrier-freq').textContent = `${binauralState.carrierFreq} Hz`;
+                document.getElementById('slider-beat-freq').value = binauralState.beatFreq;
+                document.getElementById('lbl-beat-freq').textContent = `${binauralState.beatFreq.toFixed(1)} Hz`;
+                startBinauralEngine();
+            } else {
+                document.getElementById('toggle-binaural-active').checked = false;
+                stopBinauralEngine();
+            }
+
+            if (!isPlaying) startAllActiveGenerators();
+        }
+
+        /* =========================================================================
+           11. POMODORO TIMER LOGIC & TOAST NOTIFICATION
+           ========================================================================= */
+        function togglePomodoro() {
+            if (pomodoroState.isRunning) {
+                clearInterval(pomodoroState.timerInterval);
+                pomodoroState.isRunning = false;
+                document.getElementById('lbl-pomo-play').textContent = 'Resume Session';
+                document.getElementById('icon-pomo-play').className = 'fa-solid fa-play';
+            } else {
+                pomodoroState.isRunning = true;
+                document.getElementById('lbl-pomo-play').textContent = 'Pause Session';
+                document.getElementById('icon-pomo-play').className = 'fa-solid fa-pause';
+
+                pomodoroState.timerInterval = setInterval(() => {
+                    if (pomodoroState.remainingSeconds > 0) {
+                        pomodoroState.remainingSeconds--;
+                        updatePomodoroUI();
+                    } else {
+                        clearInterval(pomodoroState.timerInterval);
+                        pomodoroState.isRunning = false;
+                        playChimeSound();
+                        showToast('🎉 Focus session complete! Take a well-deserved break.');
+                        document.getElementById('lbl-pomo-play').textContent = 'Start Session';
+                        document.getElementById('icon-pomo-play').className = 'fa-solid fa-play';
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetPomodoro(minutes) {
+            clearInterval(pomodoroState.timerInterval);
+            pomodoroState.isRunning = false;
+            pomodoroState.durationMinutes = minutes || 25;
+            pomodoroState.remainingSeconds = pomodoroState.durationMinutes * 60;
+            document.getElementById('lbl-pomo-play').textContent = 'Start Session';
+            document.getElementById('icon-pomo-play').className = 'fa-solid fa-play';
+            updatePomodoroUI();
+        }
+
+        function updatePomodoroUI() {
+            const mins = Math.floor(pomodoroState.remainingSeconds / 60);
+            const secs = pomodoroState.remainingSeconds % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            document.getElementById('pomo-timer-display').textContent = formatted;
+        }
+
+        function playChimeSound() {
+            if (!ctx) return;
+            const osc = ctx.createOscillator();
+            const chimeGain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5 note
+            chimeGain.gain.setValueAtTime(0, ctx.currentTime);
+            chimeGain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.1);
+            chimeGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.0);
+
+            osc.connect(chimeGain);
+            chimeGain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 2.0);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.textContent = message;
+            toast.classList.remove('hidden');
+            
+            // Trigger animation fade in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3500);
+        }
+
+        /* =========================================================================
+           12. SLEEP / FADE TIMER IMPLEMENTATION
+           ========================================================================= */
+        function startSleepTimer(minutes) {
+            if (sleepTimerInterval) clearInterval(sleepTimerInterval);
+            sleepTimerSeconds = minutes * 60;
+
+            updateSleepTimerUI();
+
+            sleepTimerInterval = setInterval(() => {
+                if (sleepTimerSeconds > 0) {
+                    sleepTimerSeconds--;
+                    updateSleepTimerUI();
+                } else {
+                    clearInterval(sleepTimerInterval);
+                    sleepTimerInterval = null;
+                    document.getElementById('text-timer-status').textContent = 'Off';
+                    
+                    // Smooth 10-second fade out of master gain before stopping
+                    if (masterGain && ctx) {
+                        masterGain.gain.setTargetAtTime(0.0001, ctx.currentTime, 3.0);
+                        setTimeout(() => {
+                            stopAllGenerators();
+                            const normalVol = parseFloat(document.getElementById('slider-master-volume').value);
+                            masterGain.gain.setValueAtTime(normalVol, ctx.currentTime);
+                            showToast('Sleep Timer finished. Sound playback stopped.');
+                        }, 10000);
+                    } else {
+                        stopAllGenerators();
+                    }
+                }
+            }, 1000);
+
+            showToast(`Sleep Timer set for ${minutes} minutes`);
+        }
+
+        function stopSleepTimer() {
+            if (sleepTimerInterval) {
+                clearInterval(sleepTimerInterval);
+                sleepTimerInterval = null;
+            }
+            sleepTimerSeconds = 0;
+            document.getElementById('text-timer-status').textContent = 'Off';
+            showToast('Sleep Timer disabled');
+        }
+
+        function updateSleepTimerUI() {
+            const mins = Math.floor(sleepTimerSeconds / 60);
+            const secs = sleepTimerSeconds % 60;
+            document.getElementById('text-timer-status').textContent = `${mins}m ${secs}s`;
+        }
+
+        /* =========================================================================
+           13. INTERFACE BINDINGS & HELPER FUNCTIONS
+           ========================================================================= */
+        function updateMasterPlayButtonUI() {
+            const playBtn = document.getElementById('btn-master-play');
+            const playIcon = document.getElementById('icon-master-play');
+            const playLabel = document.getElementById('label-master-play');
+
+            if (isPlaying) {
+                playBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white font-medium px-4 py-1.5 rounded-lg border border-rose-500 transition active:scale-95 flex items-center space-x-2';
+                playIcon.className = 'fa-solid fa-pause text-xs';
+                playLabel.textContent = 'Pause';
+            } else {
+                playBtn.className = 'bg-brand-600 hover:bg-brand-500 text-white font-medium px-4 py-1.5 rounded-lg border border-brand-500 transition active:scale-95 flex items-center space-x-2';
+                playIcon.className = 'fa-solid fa-play text-xs';
+                playLabel.textContent = 'Play';
+            }
+        }
+
+        function updateActiveChannelCount() {
+            let count = 0;
+            Object.keys(soundGenerators).forEach(k => {
+                if (soundGenerators[k].vol > 0) count++;
+            });
+            if (granularState.active) count++;
+            if (binauralState.active) count++;
+            document.getElementById('active-channels-count').textContent = count;
+        }
+
+        // Initialize UI Event Listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            renderGeneratorCards();
+            renderEQSliders();
+            renderPresetsList();
+
+            // Master Play / Pause
+            document.getElementById('btn-master-play').addEventListener('click', () => {
+                if (isPlaying) stopAllGenerators();
+                else startAllActiveGenerators();
+            });
+
+            // Master Mute Toggle
+            document.getElementById('btn-master-mute').addEventListener('click', () => {
+                if (!ctx) initAudioContext();
+                const icon = document.getElementById('icon-master-mute');
+                const slider = document.getElementById('slider-master-volume');
+                const label = document.getElementById('label-master-volume');
+
+                if (!isMuted) {
+                    preMuteVolume = parseFloat(slider.value) || 0.75;
+                    slider.value = 0;
+                    label.textContent = '0%';
+                    if (masterGain) masterGain.gain.setValueAtTime(0, ctx.currentTime);
+                    icon.className = 'fa-solid fa-volume-xmark text-rose-400 text-sm';
+                    isMuted = true;
+                } else {
+                    slider.value = preMuteVolume;
+                    label.textContent = `${Math.round(preMuteVolume * 100)}%`;
+                    if (masterGain) masterGain.gain.setValueAtTime(preMuteVolume, ctx.currentTime);
+                    icon.className = 'fa-solid fa-volume-high text-sm';
+                    isMuted = false;
+                }
+            });
+
+            // Master Volume
+            document.getElementById('slider-master-volume').addEventListener('input', (e) => {
+                const vol = parseFloat(e.target.value);
+                document.getElementById('label-master-volume').textContent = `${Math.round(vol * 100)}%`;
+                if (masterGain && ctx) masterGain.gain.setValueAtTime(vol, ctx.currentTime);
+                if (vol > 0 && isMuted) {
+                    isMuted = false;
+                    document.getElementById('icon-master-mute').className = 'fa-solid fa-volume-high text-sm';
+                }
+            });
+
+            // Sleep Timer Controls
+            const sleepModal = document.getElementById('modal-sleep-timer');
+            document.getElementById('btn-sleep-timer').addEventListener('click', () => {
+                sleepModal.classList.remove('hidden');
+            });
+            document.getElementById('btn-close-sleep-modal').addEventListener('click', () => {
+                sleepModal.classList.add('hidden');
+            });
+            document.querySelectorAll('.btn-select-sleep').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const min = parseInt(btn.getAttribute('data-sleep-min'));
+                    startSleepTimer(min);
+                    sleepModal.classList.add('hidden');
+                });
+            });
+            document.getElementById('btn-cancel-sleep-timer').addEventListener('click', () => {
+                stopSleepTimer();
+                sleepModal.classList.add('hidden');
+            });
+
+            // Save Custom Preset Modal Controls
+            const saveModal = document.getElementById('modal-save-preset');
+            document.getElementById('btn-save-preset').addEventListener('click', () => {
+                saveModal.classList.remove('hidden');
+                document.getElementById('input-preset-name').focus();
+            });
+            document.getElementById('btn-cancel-save').addEventListener('click', () => {
+                saveModal.classList.add('hidden');
+            });
+            document.getElementById('btn-confirm-save').addEventListener('click', () => {
+                const nameInput = document.getElementById('input-preset-name').value.trim();
+                if (!nameInput) {
+                    showToast('Please enter a preset name');
+                    return;
+                }
+
+                const presetKey = 'custom_' + Date.now();
+                const presetObj = {
+                    name: nameInput,
+                    custom: true,
+                    vol: {},
+                    eq: [...eqGains],
+                    granular: { ...granularState },
+                    binaural: { ...binauralState }
+                };
+
+                Object.keys(soundGenerators).forEach(k => {
+                    presetObj.vol[k] = soundGenerators[k].vol;
+                });
+
+                customPresets[presetKey] = presetObj;
+                localStorage.setItem('aurasynth_custom_presets', JSON.stringify(customPresets));
+
+                renderPresetsList();
+                saveModal.classList.add('hidden');
+                document.getElementById('input-preset-name').value = '';
+                showToast(`Saved preset: "${nameInput}"`);
+            });
+
+            // LFO Filter Sweep Binding
+            document.getElementById('toggle-lfo-active').addEventListener('change', (e) => {
+                if (!ctx) initAudioContext();
+                if (e.target.checked) {
+                    lfoGainNode.gain.setTargetAtTime(3500, ctx.currentTime, 0.1);
+                    showToast('Filter LFO Sweep enabled');
+                } else {
+                    lfoGainNode.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+                    showToast('Filter LFO Sweep disabled');
+                }
+            });
+
+            document.getElementById('slider-lfo-rate').addEventListener('input', (e) => {
+                const rate = parseFloat(e.target.value);
+                document.getElementById('lbl-lfo-rate').textContent = `${rate.toFixed(2)} Hz`;
+                if (lfoNode && ctx) {
+                    lfoNode.frequency.setTargetAtTime(rate, ctx.currentTime, 0.05);
+                }
+            });
+
+            // Stereo Expander Width Slider Binding
+            document.getElementById('slider-stereo-width').addEventListener('input', (e) => {
+                const widthVal = parseFloat(e.target.value);
+                document.getElementById('lbl-stereo-width').textContent = `${Math.round(widthVal * 100)}%`;
+                // Adjust pan multipliers across active generators
+                Object.keys(soundGenerators).forEach(k => {
+                    const basePan = soundGenerators[k].pan;
+                    setChannelPan(k, Math.max(-1, Math.min(1, basePan * widthVal)));
+                });
+            });
+
+            // Tab Navigation Switcher
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetTabId = btn.getAttribute('data-tab');
+
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60';
+                    });
+                    btn.className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 bg-slate-100 text-slate-900 shadow-sm';
+
+                    document.querySelectorAll('.tab-page').forEach(page => page.classList.add('hidden'));
+                    document.getElementById(targetTabId).classList.remove('hidden');
+                });
+            });
+
+            // Visualizer Mode Toggle
+            document.getElementById('btn-vis-mode').addEventListener('click', () => {
+                visMode = visMode === 'spectrum' ? 'waveform' : 'spectrum';
+                document.getElementById('lbl-vis-mode').textContent = visMode === 'spectrum' ? 'Spectrum' : 'Waveform';
+            });
+
+            // Granular Controls Binding
+            document.getElementById('toggle-granular-active').addEventListener('change', (e) => {
+                if (e.target.checked) startGranularEngine();
+                else stopGranularEngine();
+            });
+
+            document.getElementById('select-grain-source').addEventListener('change', (e) => {
+                granularState.sourceBufferName = e.target.value;
+            });
+
+            document.getElementById('slider-grain-size').addEventListener('input', (e) => {
+                granularState.grainSizeMs = parseInt(e.target.value);
+                document.getElementById('lbl-grain-size').textContent = `${granularState.grainSizeMs} ms`;
+            });
+
+            document.getElementById('slider-grain-density').addEventListener('input', (e) => {
+                granularState.densityPerSec = parseInt(e.target.value);
+                document.getElementById('lbl-grain-density').textContent = `${granularState.densityPerSec} / sec`;
+            });
+
+            document.getElementById('slider-grain-pitch').addEventListener('input', (e) => {
+                granularState.pitchRandomSemitones = parseFloat(e.target.value);
+                document.getElementById('lbl-grain-pitch').textContent = `± ${granularState.pitchRandomSemitones.toFixed(1)} semitones`;
+            });
+
+            document.getElementById('slider-grain-pan').addEventListener('input', (e) => {
+                granularState.panJitter = parseFloat(e.target.value);
+                document.getElementById('lbl-grain-pan').textContent = `${Math.round(granularState.panJitter * 100)}%`;
+            });
+
+            document.getElementById('slider-grain-volume').addEventListener('input', (e) => {
+                granularState.volume = parseFloat(e.target.value);
+                document.getElementById('lbl-grain-volume').textContent = `${Math.round(granularState.volume * 100)}%`;
+            });
+
+            // Binaural Beats Binding
+            document.getElementById('toggle-binaural-active').addEventListener('change', (e) => {
+                if (e.target.checked) startBinauralEngine();
+                else stopBinauralEngine();
+            });
+
+            document.querySelectorAll('.btn-brainwave').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.btn-brainwave').forEach(b => {
+                        b.className = 'btn-brainwave flex flex-col items-center p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition';
+                    });
+                    btn.className = 'btn-brainwave active flex flex-col items-center p-2.5 rounded-lg bg-slate-950 border border-brand-500/80 transition';
+
+                    const type = btn.getAttribute('data-binaural');
+                    const freqs = { delta: 2.5, theta: 6.0, alpha: 10.0, beta: 20.0, gamma: 40.0 };
+                    binauralState.beatFreq = freqs[type];
+
+                    document.getElementById('slider-beat-freq').value = binauralState.beatFreq;
+                    document.getElementById('lbl-beat-freq').textContent = `${binauralState.beatFreq.toFixed(1)} Hz`;
+                    updateBinauralFrequencies();
+                });
+            });
+
+            document.getElementById('slider-carrier-freq').addEventListener('input', (e) => {
+                binauralState.carrierFreq = parseFloat(e.target.value);
+                document.getElementById('lbl-carrier-freq').textContent = `${binauralState.carrierFreq} Hz`;
+                updateBinauralFrequencies();
+            });
+
+            document.getElementById('slider-beat-freq').addEventListener('input', (e) => {
+                binauralState.beatFreq = parseFloat(e.target.value);
+                document.getElementById('lbl-beat-freq').textContent = `${binauralState.beatFreq.toFixed(1)} Hz`;
+                updateBinauralFrequencies();
+            });
+
+            document.getElementById('slider-binaural-volume').addEventListener('input', (e) => {
+                binauralState.volume = parseFloat(e.target.value);
+                document.getElementById('lbl-binaural-volume').textContent = `${Math.round(binauralState.volume * 100)}%`;
+                if (binauralState.gainNode && ctx) {
+                    binauralState.gainNode.gain.setTargetAtTime(binauralState.volume, ctx.currentTime, 0.05);
+                }
+            });
+
+            // Flatten EQ Button
+            document.getElementById('btn-reset-eq').addEventListener('click', () => {
+                eqFrequencies.forEach((freq, idx) => {
+                    eqGains[idx] = 0;
+                    const slider = document.getElementById(`slider-eq-${idx}`);
+                    if (slider) slider.value = 0;
+                    const label = document.getElementById(`lbl-eq-val-${idx}`);
+                    if (label) label.textContent = '0dB';
+                    if (ctx && eqNodes[idx]) eqNodes[idx].gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+                });
+                showToast('Equalizer flattened');
+            });
+
+            // Pomodoro Bindings
+            document.getElementById('btn-pomo-toggle').addEventListener('click', togglePomodoro);
+            document.getElementById('btn-pomo-reset').addEventListener('click', () => resetPomodoro(25));
+            document.querySelectorAll('.btn-pomo-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const min = parseInt(btn.getAttribute('data-pomo-min'));
+                    resetPomodoro(min);
+                });
+            });
+
+            // Reset All Button
+            document.getElementById('btn-reset-all').addEventListener('click', () => {
+                Object.keys(soundGenerators).forEach(k => {
+                    setChannelVolume(k, 0);
+                    document.getElementById(`slider-vol-${k}`).value = 0;
+                    document.getElementById(`val-vol-${k}`).textContent = '0%';
+                });
+                stopGranularEngine();
+                stopBinauralEngine();
+                document.getElementById('toggle-granular-active').checked = false;
+                document.getElementById('toggle-binaural-active').checked = false;
+                showToast('Reset all channels to zero');
+            });
+        });
+    </script>
+</body>
+</html>
