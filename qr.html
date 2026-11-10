@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickQR - Simple & Fast QR Code Tool</title>
+    <!-- Tailwind & Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        
+        /* Smooth, subtle UI transitions */
+        button, a, input, textarea {
+            transition: all 0.15s ease-in-out;
+        }
+        
+        button:active, a:active {
+            transform: scale(0.97);
+        }
+
+        /* Scan laser line animation for active camera view */
+        @keyframes scan-beam {
+            0% { top: 5%; opacity: 0.3; }
+            50% { opacity: 0.9; }
+            100% { top: 90%; opacity: 0.3; }
+        }
+
+        .scanner-beam {
+            position: absolute;
+            left: 5%;
+            right: 5%;
+            height: 2px;
+            background-color: #2563EB;
+            box-shadow: 0 0 8px #2563EB;
+            animation: scan-beam 2.2s infinite ease-in-out;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Subtle Fade & Slide-in for tab content & results */
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeInSlide 0.25s ease-out forwards;
+        }
+
+        /* Toast notification popup animation */
+        @keyframes toastPop {
+            0% { opacity: 0; transform: translate(-50%, 12px); }
+            100% { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        .toast-animate {
+            animation: toastPop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900 font-sans antialiased min-h-screen flex flex-col justify-between p-4 sm:p-8">
+
+    <!-- Header Navigation -->
+    <header class="w-full max-w-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 border-b-2 border-gray-900 pb-4">
+        <div class="flex items-center gap-3">
+            <h1 class="text-3xl font-black tracking-tight uppercase">QuickQR</h1>
+        </div>
+        
+        <!-- Navigation Tabs (Simple Bold Text Buttons) -->
+        <nav class="flex gap-6">
+            <button id="tab-scan-btn" onclick="switchTab('scan')" class="text-lg font-bold text-blue-600 underline underline-offset-8">
+                Scan
+            </button>
+            <button id="tab-generate-btn" onclick="switchTab('generate')" class="text-lg font-bold text-gray-400 hover:text-gray-900">
+                Generate
+            </button>
+            <button id="tab-history-btn" onclick="switchTab('history')" class="text-lg font-bold text-gray-400 hover:text-gray-900">
+                History
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="w-full max-w-xl mx-auto flex-grow">
+        
+        <!-- SECTION 1: SCANNER -->
+        <section id="section-scan" class="space-y-6 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-gray-900">Scan QR Code</h2>
+                <button id="flip-camera-btn" onclick="toggleCameraFacing()" class="hidden text-sm font-bold text-blue-600 hover:underline">
+                    Flip Camera
+                </button>
+            </div>
+
+            <!-- Live Camera Viewfinder -->
+            <div id="camera-container" class="relative bg-gray-50 w-full h-72 flex flex-col items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+                <div id="scan-laser" class="scanner-beam hidden"></div>
+                <div id="reader" class="w-full h-full object-cover"></div>
+                <div id="camera-placeholder" class="text-center p-4">
+                    <p class="text-base font-bold text-gray-400">Camera is off</p>
+                </div>
+            </div>
+
+            <!-- Camera & Actions Controls -->
+            <div class="space-y-4">
+                <div class="flex gap-4">
+                    <button id="start-camera-btn" onclick="startCamera()" class="flex-1 text-base font-bold text-blue-600 hover:underline text-left py-1">
+                        Turn On Camera
+                    </button>
+                    <button id="stop-camera-btn" onclick="stopCamera()" class="flex-1 text-base font-bold text-red-600 hover:underline text-left py-1 hidden">
+                        Turn Off Camera
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap gap-6 text-base font-bold pt-2 border-t border-gray-100">
+                    <label class="text-gray-900 hover:text-blue-600 cursor-pointer">
+                        Upload Image File
+                        <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                    </label>
+                    <button onclick="readFromClipboard()" class="text-gray-900 hover:text-blue-600">
+                        Paste Image
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scan Result Display -->
+            <div id="scan-result-card" class="hidden space-y-3 pt-4 border-t-2 border-gray-900 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <span class="text-base font-bold text-blue-600">Result</span>
+                    <button onclick="copyToClipboardText(scannedContent)" class="text-sm font-bold text-gray-900 hover:underline">
+                        Copy Text
+                    </button>
+                </div>
+                <p id="scan-result-text" class="text-lg font-mono break-all text-gray-900 bg-gray-50 p-4 font-semibold"></p>
+                <div id="scan-action-container"></div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: GENERATOR -->
+        <section id="section-generate" class="space-y-6 hidden animate-fade-in">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h2 class="text-lg font-bold text-gray-900">Create QR Code</h2>
+                <div class="flex gap-4 text-sm font-bold text-gray-500">
+                    <span>Preset:</span>
+                    <button onclick="setTemplate('url')" class="text-blue-600 hover:underline">URL</button>
+                    <button onclick="setTemplate('wifi')" class="text-blue-600 hover:underline">WiFi</button>
+                    <button onclick="setTemplate('vcard')" class="text-blue-600 hover:underline">Contact</button>
+                </div>
+            </div>
+
+            <!-- Text / URL Input -->
+            <div class="space-y-2">
+                <textarea id="qr-input" rows="3" placeholder="Type or paste content here..." class="w-full p-4 bg-gray-50 text-base font-medium text-gray-900 focus:outline-none focus:bg-gray-100 transition-colors border-none"></textarea>
+                <div class="flex justify-end">
+                    <button onclick="pasteTextToInput()" class="text-sm font-bold text-blue-600 hover:underline">
+                        Paste Clipboard Text
+                    </button>
+                </div>
+            </div>
+
+            <!-- Generated QR Display Container -->
+            <div class="bg-gray-50 p-8 flex flex-col items-center justify-center space-y-6">
+                <div id="qrcode-wrapper" class="p-3 bg-white flex items-center justify-center min-h-[180px] min-w-[180px]">
+                    <div id="qrcode"></div>
+                </div>
+                <p id="qr-empty-hint" class="text-base font-bold text-gray-400">Enter text above to preview QR</p>
+                
+                <!-- Action Controls for Generated QR -->
+                <div id="gen-actions" class="flex gap-6 w-full justify-center hidden pt-2">
+                    <button onclick="downloadQR('png')" class="text-base font-bold text-blue-600 hover:underline">
+                        Download PNG
+                    </button>
+                    <button onclick="downloadQR('svg')" class="text-base font-bold text-gray-900 hover:underline">
+                        Download SVG
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: HISTORY -->
+        <section id="section-history" class="space-y-6 hidden animate-fade-in">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+                <h2 class="text-lg font-bold text-gray-900">History</h2>
+                <button onclick="clearHistory()" class="text-sm font-bold text-red-600 hover:underline">
+                    Clear History
+                </button>
+            </div>
+
+            <div id="history-list" class="space-y-4">
+                <!-- History Items Rendered Dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Global Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 text-base font-bold hidden shadow-xl z-50 toast-animate">
+        <span id="toast-message">Notification</span>
+    </div>
+
+    <!-- Hidden Canvas for Preprocessing -->
+    <canvas id="proc-canvas" class="hidden"></canvas>
+
+    <!-- Application Script -->
+    <script>
+        // Global State Variables
+        let html5QrcodeScanner = null;
+        let isCameraActive = false;
+        let cameraFacingMode = "environment"; 
+        let scannedContent = '';
+        let historyItems = [];
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+            
+            const inputEl = document.getElementById('qr-input');
+            if (inputEl) {
+                inputEl.addEventListener('input', () => {
+                    generateQR(inputEl.value.trim());
+                });
+            }
+
+            // Global paste handler
+            document.addEventListener('paste', handleGlobalPaste);
+        });
+
+        // Tab Switching Logic with Animation Reinvalidation
+        function switchTab(tab) {
+            ['scan', 'generate', 'history'].forEach(t => {
+                const section = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-${t}-btn`);
+                if (t === tab) {
+                    section.classList.remove('hidden');
+                    section.classList.remove('animate-fade-in');
+                    void section.offsetWidth; // Trigger reflow for animation replay
+                    section.classList.add('animate-fade-in');
+                    btn.className = "text-lg font-bold text-blue-600 underline underline-offset-8";
+                } else {
+                    section.classList.add('hidden');
+                    btn.className = "text-lg font-bold text-gray-400 hover:text-gray-900";
+                }
+            });
+
+            if (tab !== 'scan' && isCameraActive) {
+                stopCamera();
+            }
+            if (tab === 'history') {
+                renderHistory();
+            }
+        }
+
+        // --- CAMERA SCANNER FUNCTIONS ---
+        function startCamera() {
+            const placeholder = document.getElementById('camera-placeholder');
+            const flipBtn = document.getElementById('flip-camera-btn');
+            const laser = document.getElementById('scan-laser');
+            
+            if (html5QrcodeScanner) {
+                stopCamera();
+            }
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 15, qrbox: { width: 220, height: 220 } };
+
+            html5QrcodeScanner.start(
+                { facingMode: cameraFacingMode },
+                config,
+                (decodedText) => {
+                    handleSuccessfulScan(decodedText);
+                    stopCamera();
+                },
+                () => {}
+            ).then(() => {
+                isCameraActive = true;
+                placeholder.classList.add('hidden');
+                laser.classList.remove('hidden');
+                document.getElementById('start-camera-btn').classList.add('hidden');
+                document.getElementById('stop-camera-btn').classList.remove('hidden');
+                flipBtn.classList.remove('hidden');
+            }).catch(err => {
+                showToast("Camera access denied or missing");
+                console.error(err);
+            });
+        }
+
+        function stopCamera() {
+            if (html5QrcodeScanner && isCameraActive) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner.clear();
+                    isCameraActive = false;
+                    document.getElementById('camera-placeholder').classList.remove('hidden');
+                    document.getElementById('scan-laser').classList.add('hidden');
+                    document.getElementById('start-camera-btn').classList.remove('hidden');
+                    document.getElementById('stop-camera-btn').classList.add('hidden');
+                    document.getElementById('flip-camera-btn').classList.add('hidden');
+                }).catch(err => console.error(err));
+            }
+        }
+
+        function toggleCameraFacing() {
+            cameraFacingMode = (cameraFacingMode === "environment") ? "user" : "environment";
+            startCamera();
+        }
+
+        // --- DECODING ENGINE ---
+        function decodeImageElement(img) {
+            const canvas = document.getElementById('proc-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const scales = [1.0, 0.5, 1.5, 2.0];
+            const rotations = [0, 90, 180, 270];
+
+            for (let scale of scales) {
+                const width = Math.floor(img.width * scale);
+                const height = Math.floor(img.height * scale);
+                canvas.width = width;
+                canvas.height = height;
+
+                for (let angle of rotations) {
+                    ctx.save();
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.translate(width / 2, height / 2);
+                    ctx.rotate((angle * Math.PI) / 180);
+                    ctx.drawImage(img, -width / 2, -height / 2, width, height);
+                    ctx.restore();
+
+                    let imageData = ctx.getImageData(0, 0, width, height);
+                    let code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "attemptBoth"
+                    });
+
+                    if (code && code.data) return code.data;
+
+                    let d = imageData.data;
+                    for (let i = 0; i < d.length; i += 4) {
+                        let avg = (d[i] + d[i + 1] + d[i + 2]) / 3;
+                        let v = avg > 128 ? 255 : 0;
+                        d[i] = d[i + 1] = d[i + 2] = v;
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+
+                    code = jsQR(d, width, height, { inversionAttempts: "attemptBoth" });
+                    if (code && code.data) return code.data;
+                }
+            }
+            return null;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const result = decodeImageElement(img);
+                    if (result) {
+                        handleSuccessfulScan(result);
+                    } else {
+                        showToast("No QR code found in image");
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function readFromClipboard() {
+            showToast("Press Ctrl+V / Cmd+V to paste your QR image");
+        }
+
+        function handleGlobalPaste(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const result = decodeImageElement(img);
+                            if (result) {
+                                switchTab('scan');
+                                handleSuccessfulScan(result);
+                            } else {
+                                showToast("No QR code found in pasted image");
+                            }
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        }
+
+        function handleSuccessfulScan(text) {
+            scannedContent = text;
+            const card = document.getElementById('scan-result-card');
+            const resultText = document.getElementById('scan-result-text');
+            const actionContainer = document.getElementById('scan-action-container');
+
+            resultText.textContent = text;
+            card.classList.remove('hidden');
+            
+            let isUrl = false;
+            try {
+                const url = new URL(text);
+                isUrl = url.protocol === "http:" || url.protocol === "https:";
+            } catch (_) {}
+
+            if (isUrl) {
+                actionContainer.innerHTML = `
+                    <a href="${text}" target="_blank" rel="noopener noreferrer" class="inline-block text-base font-bold text-blue-600 hover:underline pt-2">
+                        Open Link &rarr;
+                    </a>
+                `;
+            } else {
+                actionContainer.innerHTML = '';
+            }
+
+            saveHistoryItem({ type: 'Scan', text: text, timestamp: new Date().toISOString() });
+            showToast("QR Code Scanned!");
+        }
+
+        // --- GENERATOR FUNCTIONS ---
+        function generateQR(text) {
+            const qrContainer = document.getElementById('qrcode');
+            const emptyHint = document.getElementById('qr-empty-hint');
+            const actions = document.getElementById('gen-actions');
+
+            qrContainer.innerHTML = '';
+
+            if (!text) {
+                emptyHint.classList.remove('hidden');
+                actions.classList.add('hidden');
+                return;
+            }
+
+            emptyHint.classList.add('hidden');
+            actions.classList.remove('hidden');
+
+            new QRCode(qrContainer, {
+                text: text,
+                width: 180,
+                height: 180,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            saveHistoryItem({ type: 'Generate', text: text, timestamp: new Date().toISOString() });
+        }
+
+        function pasteTextToInput() {
+            navigator.clipboard.readText().then(text => {
+                if (text) {
+                    const input = document.getElementById('qr-input');
+                    input.value = text;
+                    generateQR(text);
+                    showToast("Pasted from clipboard");
+                }
+            }).catch(() => {
+                showToast("Cannot auto-read text from clipboard");
+            });
+        }
+
+        function setTemplate(type) {
+            const input = document.getElementById('qr-input');
+            if (type === 'url') {
+                input.value = 'https://example.com';
+            } else if (type === 'wifi') {
+                input.value = 'WIFI:T:WPA;S:MyNetwork;P:MyPassword;;';
+            } else if (type === 'vcard') {
+                input.value = 'BEGIN:VCARD\nVERSION:3.0\nN:Doe;John\nFN:John Doe\nTEL:+1234567890\nEND:VCARD';
+            }
+            generateQR(input.value);
+        }
+
+        function downloadQR(format) {
+            const img = document.querySelector('#qrcode img');
+            const canvas = document.querySelector('#qrcode canvas');
+
+            if (format === 'png' || format === 'svg') {
+                let dataUrl = img ? img.src : (canvas ? canvas.toDataURL("image/png") : null);
+                if (dataUrl) {
+                    const a = document.createElement('a');
+                    a.href = dataUrl;
+                    a.download = `qrcode_${Date.now()}.png`;
+                    a.click();
+                    showToast("Downloaded QR Code!");
+                }
+            }
+        }
+
+        // --- HISTORY LOCALSTORAGE MANAGEMENT ---
+        function loadHistory() {
+            try {
+                const stored = localStorage.getItem('quickqr_history');
+                historyItems = stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                historyItems = [];
+            }
+        }
+
+        function saveHistoryItem(item) {
+            if (!item.text) return;
+            historyItems = historyItems.filter(h => h.text !== item.text);
+            historyItems.unshift(item);
+            if (historyItems.length > 30) historyItems.pop();
+            try {
+                localStorage.setItem('quickqr_history', JSON.stringify(historyItems));
+            } catch (e) {}
+        }
+
+        function renderHistory() {
+            loadHistory();
+            const list = document.getElementById('history-list');
+            if (!list) return;
+
+            if (historyItems.length === 0) {
+                list.innerHTML = `
+                    <p class="text-base font-bold text-gray-400 py-4">No history yet.</p>
+                `;
+                return;
+            }
+
+            list.innerHTML = historyItems.map((item, index) => {
+                const isScan = item.type === 'Scan';
+                return `
+                    <div class="flex items-center justify-between gap-4 py-2 border-b border-gray-100">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <span class="text-sm font-bold uppercase ${isScan ? 'text-blue-600' : 'text-gray-900'} shrink-0">
+                                ${item.type}
+                            </span>
+                            <span class="font-mono text-base font-semibold truncate text-gray-800">${item.text}</span>
+                        </div>
+                        <div class="flex items-center gap-4 shrink-0 font-bold text-sm">
+                            <button onclick="copyToClipboardText('${encodeURIComponent(item.text)}', true)" class="text-gray-900 hover:text-blue-600">
+                                Copy
+                            </button>
+                            <button onclick="deleteHistoryItem(${index})" class="text-gray-400 hover:text-red-600">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteHistoryItem(index) {
+            historyItems.splice(index, 1);
+            try {
+                localStorage.setItem('quickqr_history', JSON.stringify(historyItems));
+            } catch (e) {}
+            renderHistory();
+        }
+
+        function clearHistory() {
+            historyItems = [];
+            try {
+                localStorage.removeItem('quickqr_history');
+            } catch (e) {}
+            renderHistory();
+            showToast("History cleared");
+        }
+
+        // --- UTILS ---
+        function copyToClipboardText(text, isEncoded = false) {
+            const rawText = isEncoded ? decodeURIComponent(text) : text;
+            if (!rawText) return;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = rawText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Copied to clipboard!");
+            } catch (err) {
+                showToast("Copy failed");
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const messageEl = document.getElementById('toast-message');
+
+            if (!toast || !messageEl) return;
+
+            messageEl.textContent = message;
+            toast.classList.remove('hidden');
+            
+            // Re-trigger popup animation
+            toast.classList.remove('toast-animate');
+            void toast.offsetWidth;
+            toast.classList.add('toast-animate');
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2200);
+        }
+    </script>
+</body>
+</html>
