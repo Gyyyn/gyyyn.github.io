@@ -5,7 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gyyyn's Web Tools</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
+    <script>
+        /* Early Theme Initialization to prevent Flash of Unstyled Content (FOUC) */
+        (function() {
+            try {
+                var raw = localStorage.getItem('gyyyn_theme_settings');
+                if (raw) {
+                    var s = JSON.parse(raw);
+                    var r = document.documentElement;
+                    if (s.bgColor) r.style.setProperty('--bg-color', s.bgColor);
+                    if (s.surfaceColor) r.style.setProperty('--surface-color', s.surfaceColor);
+                    if (s.surfaceDark) r.style.setProperty('--surface-dark', s.surfaceDark);
+                    if (s.surfaceHover) r.style.setProperty('--surface-hover', s.surfaceHover);
+                    if (s.collapsedBg) r.style.setProperty('--collapsed-bg', s.collapsedBg);
+                    if (s.accentColor) {
+                        r.style.setProperty('--accent-color', s.accentColor);
+                        r.style.setProperty('--text-color', s.accentColor);
+                    }
+                    if (s.accentHover) r.style.setProperty('--accent-hover', s.accentHover);
+                    if (s.fontFamily) r.style.setProperty('--font-family', s.fontFamily);
+                    if (s.fontScale) r.style.setProperty('--font-scale', s.fontScale);
+                }
+            } catch(e) {}
+        })();
+    </script>
     <style>
+        :root {
+            --bg-color: #362419;
+            --surface-color: #2a1c13;
+            --surface-dark: #1a110c;
+            --surface-hover: #472c1c;
+            --collapsed-bg: rgba(54, 36, 25, 0.95);
+            --accent-color: #00ff00;
+            --accent-hover: #ffff00;
+            --text-color: #00ff00;
+            --font-family: 'PressStart2P', monospace;
+            --font-scale: 1;
+        }
+
         /* --- Basic Setup & 8-Bit Aesthetics --- */
         @font-face {
             font-family: 'PressStart2P';
@@ -13,14 +53,20 @@
         }
 
         body {
-            background-color: #362419; /* Deep brown */
-            color: #00ff00; /* Green text */
-            font-family: 'PressStart2P', monospace;
+            background-color: var(--bg-color); /* Deep brown default */
+            color: var(--text-color); /* Green text default */
+            font-family: var(--font-family);
+            font-size: calc(1rem * var(--font-scale, 1));
             cursor: url('cursor.cur'), auto;
             overflow-x: hidden;
             margin: 0;
             padding: 2rem;
             text-align: center;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        button, input, select, textarea {
+            font-family: inherit;
         }
         
         .container {
@@ -33,11 +79,11 @@
             position: fixed;
             height: 6px;
             width: 6px;
-            background: #00ff00;
+            background: var(--accent-color);
             border-radius: 50%;
             pointer-events: none;
             z-index: 9999;
-            box-shadow: 0 0 4px #00ff00, 0 0 8px #00ff00;
+            box-shadow: 0 0 4px var(--accent-color), 0 0 8px var(--accent-color);
         }
 
         /* --- Animated Intro --- */
@@ -46,7 +92,7 @@
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
-            border-right: 0.15em solid #00ff00;
+            border-right: 0.15em solid var(--accent-color);
             animation: typing 3.5s steps(30, end), blink-caret .75s step-end infinite;
             margin: 2rem auto 1rem;
             max-width: max-content;
@@ -67,7 +113,7 @@
 
         @keyframes blink-caret {
             from, to { border-color: transparent }
-            50% { border-color: #00ff00; }
+            50% { border-color: var(--accent-color); }
         }
 
         .blink {
@@ -93,13 +139,13 @@
             text-align: center;
         }
         .quote-content a {
-            color: #ffff00;
+            color: var(--accent-hover);
             text-decoration: none;
-            border-bottom: 1px dashed #ffff00;
+            border-bottom: 1px dashed var(--accent-hover);
         }
         .quote-content a:hover {
-            background-color: #00ff00;
-            color: #362419;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
             border-bottom: none;
         }
         .quote-text {
@@ -120,10 +166,10 @@
         }
 
         .widget-box {
-            background: #2a1c13;
-            border: 3px solid #00ff00;
+            background: var(--surface-color);
+            border: 3px solid var(--accent-color);
             padding: 1rem 1.5rem;
-            box-shadow: 6px 6px 0px #00ff00;
+            box-shadow: 6px 6px 0px var(--accent-color);
             font-size: 0.875rem;
             min-width: 200px;
             text-align: center;
@@ -134,7 +180,7 @@
             font-size: 1.25rem;
             margin-bottom: 2rem;
             text-align: left;
-            border-bottom: 2px dashed #00ff00;
+            border-bottom: 2px dashed var(--accent-color);
             padding-bottom: 0.5rem;
         }
 
@@ -161,18 +207,18 @@
 
         .tools-badge {
             font-size: 0.7rem;
-            color: #ffff00;
+            color: var(--accent-hover);
             cursor: pointer;
             padding: 3px 8px;
-            border: 1px dashed #ffff00;
+            border: 1px dashed var(--accent-hover);
             user-select: none;
             transition: all 0.2s ease;
         }
 
         .tools-badge:hover {
-            background-color: #00ff00;
-            color: #362419;
-            border-color: #00ff00;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border-color: var(--accent-color);
         }
 
         /* --- Collapsed State (Line of small icons at top) --- */
@@ -180,11 +226,10 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            background: rgba(54, 36, 25, 0.95);
+            background: var(--collapsed-bg);
             backdrop-filter: blur(4px);
             padding: 0.75rem 0.5rem 0.5rem;
-            border-bottom: 2px dashed #00ff00;
-            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4);
+            border-bottom: 2px dashed var(--accent-color);
             margin-bottom: 2.5rem;
         }
 
@@ -217,9 +262,9 @@
             height: 42px;
             min-width: 42px;
             min-height: 42px;
-            background: #2a1c13;
-            border: 2px solid #00ff00;
-            box-shadow: 2px 2px 0px #00ff00;
+            background: var(--surface-color);
+            border: 2px solid var(--accent-color);
+            box-shadow: 2px 2px 0px var(--accent-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -233,9 +278,9 @@
 
         .tools-section.collapsed .tool-card:hover {
             transform: translate(-2px, -2px);
-            box-shadow: 4px 4px 0px #ffff00;
-            border-color: #ffff00;
-            background-color: #472c1c;
+            box-shadow: 4px 4px 0px var(--accent-hover);
+            border-color: var(--accent-hover);
+            background-color: var(--surface-hover);
             z-index: 10;
         }
 
@@ -245,12 +290,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #00ff00;
+            color: var(--accent-color);
+            text-decoration: none;
+            cursor: pointer;
             transition: color 0.2s ease;
         }
 
         .tools-section.collapsed .tool-card:hover .tool-mini-icon {
-            color: #ffff00;
+            color: var(--accent-hover);
         }
 
         .tools-section.collapsed .tool-content {
@@ -268,9 +315,9 @@
             top: 48px;
             left: 50%;
             transform: translateX(-50%);
-            background: #1a110c;
-            color: #ffff00;
-            border: 1px solid #00ff00;
+            background: var(--surface-dark);
+            color: var(--accent-hover);
+            border: 1px solid var(--accent-color);
             padding: 4px 8px;
             font-size: 0.65rem;
             white-space: nowrap;
@@ -309,10 +356,10 @@
         }
 
         .tools-section.expanded .tool-card {
-            background: #2a1c13;
-            border: 3px solid #00ff00;
+            background: var(--surface-color);
+            border: 3px solid var(--accent-color);
             padding: 1.25rem;
-            box-shadow: 6px 6px 0px #00ff00;
+            box-shadow: 6px 6px 0px var(--accent-color);
             display: flex;
             flex-direction: column;
             margin-bottom: 0;
@@ -321,7 +368,7 @@
 
         .tools-section.expanded .tool-card:hover {
             transform: translate(-2px, -2px);
-            box-shadow: 8px 8px 0px #00ff00;
+            box-shadow: 8px 8px 0px var(--accent-color);
         }
 
         .tool-header-row {
@@ -329,24 +376,34 @@
             align-items: center;
             gap: 0.75rem;
             margin-bottom: 0.75rem;
+            overflow-x: hidden;
         }
 
         .tool-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: #00ff00;
+            color: var(--accent-color);
             flex-shrink: 0;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
         }
 
         .tools-section.expanded .tool-icon {
             width: 36px;
             height: 36px;
-            background: #1a110c;
-            border: 2px solid #00ff00;
-            box-shadow: 2px 2px 0px #00ff00;
+            background: var(--surface-dark);
+            border: 2px solid var(--accent-color);
+            box-shadow: 2px 2px 0px var(--accent-color);
             padding: 4px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .tools-section.expanded .tool-icon:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0px var(--accent-hover);
+            border-color: var(--accent-hover);
+            color: var(--accent-hover);
         }
 
         .tools-section.expanded .tool-content {
@@ -356,9 +413,9 @@
         }
 
         .tools-section.expanded .tool-content h3 {
-            font-size: 1.05rem;
+            font-size: 0.85rem;
             margin: 0;
-            text-shadow: 2px 2px 0px #1a110c;
+            text-shadow: 2px 2px 0px var(--surface-dark);
             line-height: 1.3;
         }
 
@@ -372,20 +429,20 @@
 
         .tools-section.expanded .btn {
             display: inline-block;
-            background-color: #00ff00;
-            color: #362419;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
             padding: 0.6rem 1.2rem;
             text-decoration: none;
             font-size: 0.8rem;
             transition: all 0.2s ease;
-            box-shadow: 3px 3px 0px #1a110c;
+            box-shadow: 3px 3px 0px var(--surface-dark);
             text-align: center;
             margin-top: auto;
         }
 
         .tools-section.expanded .btn:hover {
             transform: translate(2px, 2px);
-            box-shadow: 1px 1px 0px #1a110c;
+            box-shadow: 1px 1px 0px var(--surface-dark);
             background-color: #fff;
         }
 
@@ -399,10 +456,10 @@
         }
 
         .masonry-item {
-            background: #2a1c13;
-            border: 3px solid #00ff00;
+            background: var(--surface-color);
+            border: 3px solid var(--accent-color);
             padding: 1.25rem;
-            box-shadow: 6px 6px 0px #00ff00;
+            box-shadow: 6px 6px 0px var(--accent-color);
             break-inside: avoid;
             margin-bottom: 1.5rem;
             display: flex;
@@ -413,7 +470,7 @@
             font-size: 1.1rem;
             margin-top: 0;
             margin-bottom: 0.75rem;
-            text-shadow: 2px 2px 0px #1a110c;
+            text-shadow: 2px 2px 0px var(--surface-dark);
         }
 
         .masonry-item p {
@@ -425,20 +482,20 @@
 
         .masonry-item .btn {
             display: inline-block;
-            background-color: #00ff00;
-            color: #362419;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
             padding: 0.6rem 1.2rem;
             text-decoration: none;
             font-size: 0.875rem;
             transition: all 0.2s ease;
-            box-shadow: 3px 3px 0px #1a110c;
+            box-shadow: 3px 3px 0px var(--surface-dark);
             text-align: center;
             margin-top: auto;
         }
 
         .masonry-item .btn:hover {
             transform: translate(2px, 2px);
-            box-shadow: 1px 1px 0px #1a110c;
+            box-shadow: 1px 1px 0px var(--surface-dark);
             background-color: #fff;
         }
 
@@ -456,7 +513,7 @@
             font-size: 1rem;
             margin-bottom: 1.5rem;
             color: #ffffff;
-            border-bottom: 2px solid #00ff00;
+            border-bottom: 2px solid var(--accent-color);
             padding-bottom: 0.5rem;
         }
 
@@ -476,14 +533,14 @@
         }
 
         .wiktionary-content a {
-            color: #ffff00;
+            color: var(--accent-hover);
             text-decoration: none;
-            border-bottom: 1px dashed #ffff00;
+            border-bottom: 1px dashed var(--accent-hover);
         }
 
         .wiktionary-content a:hover {
-            background-color: #00ff00;
-            color: #362419;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
             border-bottom: none;
         }
 
@@ -501,12 +558,12 @@
             width: 100% !important;
             border-collapse: collapse !important;
             background: transparent !important;
-            border: 2px solid #00ff00 !important;
+            border: 2px solid var(--accent-color) !important;
             margin: 1rem 0;
         }
 
         .wiktionary-content td, .wiktionary-content th {
-            border: 1px solid #00ff00 !important;
+            border: 1px solid var(--accent-color) !important;
             background: transparent !important;
             padding: 0.5rem !important;
         }
@@ -514,7 +571,7 @@
         .wiktionary-content img {
             max-width: 100%;
             height: auto;
-            border: 2px solid #00ff00;
+            border: 2px solid var(--accent-color);
             image-rendering: pixelated;
             margin: 1rem 0;
         }
@@ -525,7 +582,7 @@
 
         /* --- Footer Styles --- */
         footer {
-            border-top: 4px solid #00ff00;
+            border-top: 4px solid var(--accent-color);
             margin-top: 4rem;
             padding-top: 2rem;
             padding-bottom: 2rem;
@@ -539,7 +596,7 @@
         }
 
         .social-links a {
-            color: #00ff00;
+            color: var(--accent-color);
             text-decoration: none;
             margin: 0 0.75rem;
             font-size: 0.875rem;
@@ -547,8 +604,8 @@
         }
 
         .social-links a:hover {
-            background-color: #00ff00;
-            color: #362419;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
             text-shadow: none;
         }
 
@@ -557,9 +614,549 @@
             font-size: 0.75rem;
             opacity: 0.8;
         }
+
+        /* --- Settings Trigger Button --- */
+        .settings-btn {
+            position: fixed;
+            top: 1rem;
+            right: 1.25rem;
+            z-index: 10005;
+            background: var(--surface-color);
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+            box-shadow: 3px 3px 0px var(--accent-color);
+            padding: 0.5rem 0.8rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            user-select: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+        }
+
+        .settings-btn:hover {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            box-shadow: 4px 4px 0px var(--accent-hover);
+            transform: translate(-1px, -1px);
+        }
+
+        .settings-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px var(--accent-hover);
+        }
+
+        /* --- Settings Modal & Dialog --- */
+        .settings-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10010;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .settings-modal.hidden {
+            display: none !important;
+        }
+
+        .settings-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            backdrop-filter: blur(4px);
+        }
+
+        .settings-dialog {
+            position: relative;
+            background: var(--surface-color);
+            border: 3px solid var(--accent-color);
+            box-shadow: 8px 8px 0px var(--accent-color);
+            width: 100%;
+            max-width: 640px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            z-index: 1;
+            animation: modalPop 0.2s ease-out;
+            overflow: hidden;
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .settings-header {
+            background: var(--surface-dark);
+            border-bottom: 2px solid var(--accent-color);
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .settings-title {
+            font-size: 0.95rem;
+            color: var(--accent-color);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .settings-close-btn {
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .settings-close-btn:hover {
+            background: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        .settings-body {
+            padding: 1.25rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-height: calc(88vh - 130px);
+        }
+
+        .settings-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .settings-body::-webkit-scrollbar-track {
+            background: var(--surface-dark);
+        }
+
+        .settings-body::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+        }
+
+        .settings-section-title {
+            font-size: 0.8rem;
+            color: var(--accent-hover);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px dashed var(--accent-color);
+            padding-bottom: 0.35rem;
+        }
+
+        /* Preset Chips */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .preset-chip {
+            background: var(--surface-dark);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 0.45rem 0.5rem;
+            font-size: 0.65rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        .preset-chip:hover {
+            border-color: var(--accent-hover);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0px var(--accent-hover);
+        }
+
+        .preset-chip.active {
+            border-width: 2px;
+            border-color: var(--accent-hover);
+            background: var(--surface-hover);
+            color: var(--accent-hover);
+            box-shadow: 2px 2px 0px var(--accent-color);
+        }
+
+        .preset-preview-dots {
+            display: inline-flex;
+            gap: 3px;
+            flex-shrink: 0;
+            border: 1px solid var(--accent-color);
+            padding: 1px;
+            background: #000;
+        }
+
+        .preset-dot {
+            width: 9px;
+            height: 9px;
+            display: inline-block;
+        }
+
+        /* Color Pickers */
+        .color-inputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .color-field {
+            background: var(--surface-dark);
+            border: 1px solid var(--accent-color);
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .color-field-label {
+            font-size: 0.7rem;
+            color: var(--accent-hover);
+        }
+
+        .color-picker-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .color-picker-input {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 44px;
+            height: 34px;
+            background: transparent;
+            border: 2px solid var(--accent-color);
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .color-picker-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-picker-input::-webkit-color-swatch {
+            border: none;
+        }
+
+        .color-hex-text {
+            font-size: 0.75rem;
+            color: var(--accent-color);
+            background: var(--surface-color);
+            border: 1px solid var(--accent-color);
+            padding: 0.35rem 0.6rem;
+            font-family: inherit;
+            width: 95px;
+            text-transform: uppercase;
+        }
+
+        .quick-swatches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.25rem;
+        }
+
+        .swatch-btn {
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--accent-color);
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.1s ease;
+        }
+
+        .swatch-btn:hover {
+            transform: scale(1.15);
+            border-color: #fff;
+        }
+
+        /* Font options */
+        .font-options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .font-option-card {
+            background: var(--surface-dark);
+            border: 1px solid var(--accent-color);
+            padding: 0.6rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        .font-option-card:hover {
+            border-color: var(--accent-hover);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0px var(--accent-hover);
+        }
+
+        .font-option-card.active {
+            border: 2px solid var(--accent-hover);
+            background: var(--surface-hover);
+            box-shadow: 3px 3px 0px var(--accent-color);
+        }
+
+        .font-name-row {
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            color: var(--accent-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .font-option-card.active .font-name-row {
+            color: var(--accent-hover);
+        }
+
+        .font-sample-text {
+            font-size: 0.65rem;
+            opacity: 0.85;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Font Scale Controls */
+        .font-scale-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+
+        .scale-btn {
+            background: var(--surface-dark);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 0.35rem 0.6rem;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .scale-btn:hover, .scale-btn.active {
+            background: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        /* Live Preview Box */
+        .preview-box {
+            background: var(--surface-dark);
+            border: 2px solid var(--accent-color);
+            padding: 0.8rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .preview-sample-line {
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .preview-widgets-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .preview-mini-btn {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            padding: 0.3rem 0.6rem;
+            font-size: 0.7rem;
+            border: none;
+            box-shadow: 2px 2px 0px var(--surface-dark);
+            cursor: pointer;
+        }
+
+        .preview-mini-badge {
+            color: var(--accent-hover);
+            border: 1px dashed var(--accent-hover);
+            padding: 2px 6px;
+            font-size: 0.65rem;
+        }
+
+        /* Footer */
+        .settings-footer {
+            background: var(--surface-dark);
+            border-top: 2px solid var(--accent-color);
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .settings-action-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 2px 2px 0px var(--surface-dark);
+        }
+
+        .settings-action-btn.primary {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            border: 2px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        .settings-action-btn.primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0px var(--surface-color);
+        }
+
+        .settings-action-btn.secondary {
+            background: transparent;
+            color: var(--accent-color);
+            border: 1px dashed var(--accent-color);
+        }
+
+        .settings-action-btn.secondary:hover {
+            background: var(--surface-hover);
+            border-color: var(--accent-hover);
+            color: var(--accent-hover);
+        }
+
+        @media (max-width: 600px) {
+            .settings-btn {
+                top: 0.5rem;
+                right: 0.5rem;
+                padding: 0.35rem 0.55rem;
+                font-size: 0.65rem;
+            }
+            .settings-dialog {
+                max-height: 94vh;
+            }
+            .settings-body {
+                padding: 0.75rem;
+                gap: 1rem;
+            }
+            .preset-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- SETTINGS TRIGGER BUTTON -->
+    <button id="settings-toggle-btn" class="settings-btn" title="Open Display Settings" aria-label="Open Display Settings">
+        <span>[⚙ SETTINGS]</span>
+    </button>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="settings-modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="settings-backdrop" id="settings-backdrop"></div>
+        <div class="settings-dialog">
+            <div class="settings-header">
+                <span id="settings-title" class="settings-title">> SYS.SETTINGS_</span>
+                <button id="settings-close-btn" class="settings-close-btn" aria-label="Close Settings">[X]</button>
+            </div>
+            
+            <div class="settings-body">
+                <!-- PRESET THEMES -->
+                <div class="settings-section">
+                    <div class="settings-section-title">> THEME PRESETS:</div>
+                    <div class="preset-grid" id="preset-grid">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- COLOR PALETTE -->
+                <div class="settings-section">
+                    <div class="settings-section-title">> COLOR PALETTE:</div>
+                    <div class="color-inputs-grid">
+                        <!-- Background -->
+                        <div class="color-field">
+                            <label class="color-field-label" for="bg-color-picker">BACKGROUND COLOR:</label>
+                            <div class="color-picker-row">
+                                <input type="color" id="bg-color-picker" class="color-picker-input" value="#362419">
+                                <input type="text" id="bg-hex-input" class="color-hex-text" maxlength="7" value="#362419">
+                            </div>
+                            <div class="quick-swatches" id="bg-swatches">
+                                <!-- Quick background swatches -->
+                            </div>
+                        </div>
+
+                        <!-- Accent -->
+                        <div class="color-field">
+                            <label class="color-field-label" for="accent-color-picker">ACCENT & TEXT COLOR:</label>
+                            <div class="color-picker-row">
+                                <input type="color" id="accent-color-picker" class="color-picker-input" value="#00ff00">
+                                <input type="text" id="accent-hex-input" class="color-hex-text" maxlength="7" value="#00ff00">
+                            </div>
+                            <div class="quick-swatches" id="accent-swatches">
+                                <!-- Quick accent swatches -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FONT SELECTION -->
+                <div class="settings-section">
+                    <div class="settings-section-title">> TYPOGRAPHY / FONT:</div>
+                    <div class="font-options-grid" id="font-options-grid">
+                        <!-- Injected by JS -->
+                    </div>
+                    <div class="font-scale-row">
+                        <span class="color-field-label">SIZE:</span>
+                        <button type="button" class="scale-btn" data-scale="0.85">[COMPACT]</button>
+                        <button type="button" class="scale-btn active" data-scale="1">[STANDARD]</button>
+                        <button type="button" class="scale-btn" data-scale="1.15">[LARGE]</button>
+                    </div>
+                </div>
+
+                <!-- LIVE PREVIEW -->
+                <div class="settings-section">
+                    <div class="settings-section-title">> LIVE PREVIEW:</div>
+                    <div class="preview-box">
+                        <div class="preview-sample-line">> ECHO "TERMINAL READY. 256 BYTES FREE."</div>
+                        <div class="preview-widgets-row">
+                            <button type="button" class="preview-mini-btn">BTN_SAMPLE</button>
+                            <span class="preview-mini-badge">[BADGE ACTIVE]</span>
+                            <span style="font-size: 0.75rem; color: var(--accent-hover);">HIGHLIGHT_LINK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">
+                <button type="button" id="settings-reset-btn" class="settings-action-btn secondary">[RESTORE DEFAULTS]</button>
+                <button type="button" id="settings-done-btn" class="settings-action-btn primary">[DONE]</button>
+            </div>
+        </div>
+    </div>
     <div class="container">
         <h1 class="intro-text">> My Web Tools_</h1>
         
@@ -1058,50 +1655,24 @@
         projects.forEach((project, index) => {
             const item = document.createElement('div');
             item.className = 'tool-card';
-            item.setAttribute('role', 'button');
-            item.setAttribute('tabindex', '0');
-            item.setAttribute('aria-label', project.title);
             item.dataset.index = index;
 
             item.innerHTML = `
-                <div class="tool-mini-icon">
+                <a href="${project.link}" target="_blank" rel="noopener noreferrer" class="tool-mini-icon" aria-label="${project.title}">
                     ${project.icon}
                     <span class="tool-tooltip">${project.title}</span>
-                </div>
+                </a>
                 <div class="tool-content">
                     <div class="tool-header-row">
-                        <div class="tool-icon">${project.icon}</div>
+                        <a href="${project.link}" target="_blank" rel="noopener noreferrer" class="tool-icon" title="Launch ${project.title}">
+                            ${project.icon}
+                        </a>
                         <h3>${project.title}</h3>
                     </div>
                     <p>${project.description}</p>
-                    <a href="${project.link}" target="_blank" class="btn" onclick="event.stopPropagation();">Launch Tool ></a>
+                    <a href="${project.link}" target="_blank" rel="noopener noreferrer" class="btn">Launch Tool ></a>
                 </div>
             `;
-
-            // Clicking card when collapsed expands and highlights it
-            item.addEventListener('click', (e) => {
-                if (!isToolsExpanded) {
-                    e.preventDefault();
-                    setToolsExpanded(true, true);
-                    setTimeout(() => {
-                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        item.style.borderColor = '#ffff00';
-                        item.style.boxShadow = '8px 8px 0px #ffff00';
-                        setTimeout(() => {
-                            item.style.borderColor = '';
-                            item.style.boxShadow = '';
-                        }, 1200);
-                    }, 50);
-                }
-            });
-
-            // Keyboard accessibility
-            item.addEventListener('keydown', (e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !isToolsExpanded) {
-                    e.preventDefault();
-                    item.click();
-                }
-            });
 
             masonryContainer.appendChild(item);
         });
@@ -1127,11 +1698,420 @@
                 // At the very top of screen
                 manualOverride = false;
                 setToolsExpanded(false);
-            } else if (scrollY > 40 && !manualOverride) {
+            } else if (scrollY > 150 && !manualOverride) {
                 // Scrolled down
                 setToolsExpanded(true);
             }
         }, { passive: true });
+
+        /* =========================================
+           SETTINGS MENU & THEME CUSTOMIZATION
+        ========================================= */
+        const THEME_STORAGE_KEY = 'gyyyn_theme_settings';
+
+        const DEFAULT_THEME = {
+            presetId: 'classic',
+            bgColor: '#362419',
+            accentColor: '#00ff00',
+            fontFamily: "'PressStart2P', monospace",
+            fontScale: '1'
+        };
+
+        const THEME_PRESETS = [
+            {
+                id: 'classic',
+                name: 'RETRO BROWN',
+                bgColor: '#362419',
+                accentColor: '#00ff00',
+                fontFamily: "'PressStart2P', monospace"
+            },
+            {
+                id: 'crt_green',
+                name: 'CRT GREEN',
+                bgColor: '#080f08',
+                accentColor: '#33ff33',
+                fontFamily: "'VT323', monospace"
+            },
+            {
+                id: 'amber_dos',
+                name: 'AMBER DOS',
+                bgColor: '#150d03',
+                accentColor: '#ffb000',
+                fontFamily: "'VT323', monospace"
+            },
+            {
+                id: 'cyberpunk',
+                name: 'CYBERPUNK',
+                bgColor: '#0e0720',
+                accentColor: '#ff007f',
+                fontFamily: "'Share Tech Mono', monospace"
+            },
+            {
+                id: 'matrix',
+                name: 'MATRIX',
+                bgColor: '#020b02',
+                accentColor: '#00ff66',
+                fontFamily: "'Share Tech Mono', monospace"
+            },
+            {
+                id: 'arcade_cyan',
+                name: 'ARCADE CYAN',
+                bgColor: '#061325',
+                accentColor: '#00e5ff',
+                fontFamily: "'Silkscreen', monospace"
+            },
+            {
+                id: 'paper',
+                name: 'HIGH CONTRAST',
+                bgColor: '#121212',
+                accentColor: '#f4f4f4',
+                fontFamily: "'Space Mono', monospace"
+            },
+            {
+                id: 'gameboy',
+                name: 'GAME BOY',
+                bgColor: '#8bac0f',
+                accentColor: '#0f380f',
+                fontFamily: "'PressStart2P', monospace"
+            }
+        ];
+
+        const FONT_CHOICES = [
+            {
+                id: 'press_start',
+                name: 'Press Start 2P',
+                family: "'PressStart2P', monospace",
+                sample: '8-Bit Arcade'
+            },
+            {
+                id: 'vt323',
+                name: 'VT323',
+                family: "'VT323', monospace",
+                sample: 'CRT Terminal'
+            },
+            {
+                id: 'share_tech',
+                name: 'Share Tech',
+                family: "'Share Tech Mono', monospace",
+                sample: 'Hacker Console'
+            },
+            {
+                id: 'silkscreen',
+                name: 'Silkscreen',
+                family: "'Silkscreen', monospace",
+                sample: 'Pixel Matrix'
+            },
+            {
+                id: 'space_mono',
+                name: 'Space Mono',
+                family: "'Space Mono', monospace",
+                sample: 'Typewriter Brutal'
+            },
+            {
+                id: 'system_mono',
+                name: 'Courier New',
+                family: "'Courier New', Courier, monospace",
+                sample: 'System Monospace'
+            }
+        ];
+
+        const BG_SWATCHES = ['#362419', '#080f08', '#150d03', '#0e0720', '#020b02', '#061325', '#121212', '#8bac0f', '#000000'];
+        const ACCENT_SWATCHES = ['#00ff00', '#33ff33', '#ffb000', '#ff007f', '#00e5ff', '#ffff00', '#ff3333', '#f4f4f4', '#0f380f'];
+
+        // Color computation helpers
+        function hexToRgb(hex) {
+            let clean = hex.replace('#', '').trim();
+            if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+            const val = parseInt(clean, 16);
+            if (isNaN(val)) return { r: 54, g: 36, b: 25 };
+            return {
+                r: (val >> 16) & 255,
+                g: (val >> 8) & 255,
+                b: val & 255
+            };
+        }
+
+        function rgbToHex(r, g, b) {
+            const clamp = (v) => Math.min(255, Math.max(0, Math.round(v)));
+            return '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('');
+        }
+
+        function mixColors(hex1, hex2, weight) {
+            const c1 = hexToRgb(hex1);
+            const c2 = hexToRgb(hex2);
+            const w = Math.min(1, Math.max(0, weight));
+            return rgbToHex(
+                c1.r * (1 - w) + c2.r * w,
+                c1.g * (1 - w) + c2.g * w,
+                c1.b * (1 - w) + c2.b * w
+            );
+        }
+
+        function computeThemePalette(bgColor, accentColor) {
+            const rgb = hexToRgb(bgColor);
+            const lum = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+            const isDark = lum < 0.55;
+
+            const surfaceColor = isDark 
+                ? mixColors(bgColor, '#000000', 0.25)
+                : mixColors(bgColor, '#000000', 0.08);
+
+            const surfaceDark = isDark
+                ? mixColors(bgColor, '#000000', 0.55)
+                : mixColors(bgColor, '#000000', 0.20);
+
+            const surfaceHover = isDark
+                ? mixColors(bgColor, '#ffffff', 0.15)
+                : mixColors(bgColor, '#000000', 0.15);
+
+            const collapsedBg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.95)`;
+
+            const accentRgb = hexToRgb(accentColor);
+            const isYellowish = accentRgb.r > 190 && accentRgb.g > 190 && accentRgb.b < 90;
+            const accentHover = isYellowish ? '#00e5ff' : '#ffff00';
+
+            return {
+                bgColor,
+                surfaceColor,
+                surfaceDark,
+                surfaceHover,
+                collapsedBg,
+                accentColor,
+                accentHover,
+                textColor: accentColor
+            };
+        }
+
+        // State
+        let currentTheme = Object.assign({}, DEFAULT_THEME);
+
+        // Load saved theme
+        function loadSavedTheme() {
+            try {
+                const stored = localStorage.getItem(THEME_STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    currentTheme = Object.assign({}, DEFAULT_THEME, parsed);
+                }
+            } catch (e) {
+                console.warn('Failed to read theme from localStorage', e);
+            }
+        }
+
+        // Apply theme to DOM and optionally persist
+        function applyTheme(theme, save = true) {
+            const palette = computeThemePalette(theme.bgColor, theme.accentColor);
+            const root = document.documentElement;
+
+            root.style.setProperty('--bg-color', palette.bgColor);
+            root.style.setProperty('--surface-color', palette.surfaceColor);
+            root.style.setProperty('--surface-dark', palette.surfaceDark);
+            root.style.setProperty('--surface-hover', palette.surfaceHover);
+            root.style.setProperty('--collapsed-bg', palette.collapsedBg);
+            root.style.setProperty('--accent-color', palette.accentColor);
+            root.style.setProperty('--accent-hover', palette.accentHover);
+            root.style.setProperty('--text-color', palette.textColor);
+            root.style.setProperty('--font-family', theme.fontFamily);
+            root.style.setProperty('--font-scale', theme.fontScale || '1');
+
+            if (save) {
+                try {
+                    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(theme));
+                } catch (e) {
+                    console.warn('Failed to save theme to localStorage', e);
+                }
+            }
+
+            syncSettingsUI();
+        }
+
+        // Elements
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+        const settingsCloseBtn = document.getElementById('settings-close-btn');
+        const settingsDoneBtn = document.getElementById('settings-done-btn');
+        const settingsResetBtn = document.getElementById('settings-reset-btn');
+        const settingsBackdrop = document.getElementById('settings-backdrop');
+
+        const bgColorPicker = document.getElementById('bg-color-picker');
+        const bgHexInput = document.getElementById('bg-hex-input');
+        const accentColorPicker = document.getElementById('accent-color-picker');
+        const accentHexInput = document.getElementById('accent-hex-input');
+
+        const presetGrid = document.getElementById('preset-grid');
+        const fontOptionsGrid = document.getElementById('font-options-grid');
+        const bgSwatchesContainer = document.getElementById('bg-swatches');
+        const accentSwatchesContainer = document.getElementById('accent-swatches');
+
+        // Populate Presets
+        THEME_PRESETS.forEach(preset => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'preset-chip';
+            btn.dataset.presetId = preset.id;
+            btn.innerHTML = `
+                <span class="preset-preview-dots">
+                    <span class="preset-dot" style="background: ${preset.bgColor};"></span>
+                    <span class="preset-dot" style="background: ${preset.accentColor};"></span>
+                </span>
+                <span>${preset.name}</span>
+            `;
+            btn.addEventListener('click', () => {
+                currentTheme.presetId = preset.id;
+                currentTheme.bgColor = preset.bgColor;
+                currentTheme.accentColor = preset.accentColor;
+                currentTheme.fontFamily = preset.fontFamily;
+                applyTheme(currentTheme, true);
+            });
+            presetGrid.appendChild(btn);
+        });
+
+        // Populate Swatches
+        BG_SWATCHES.forEach(hex => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'swatch-btn';
+            btn.style.backgroundColor = hex;
+            btn.title = `Select ${hex}`;
+            btn.addEventListener('click', () => {
+                currentTheme.presetId = 'custom';
+                currentTheme.bgColor = hex;
+                applyTheme(currentTheme, true);
+            });
+            bgSwatchesContainer.appendChild(btn);
+        });
+
+        ACCENT_SWATCHES.forEach(hex => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'swatch-btn';
+            btn.style.backgroundColor = hex;
+            btn.title = `Select ${hex}`;
+            btn.addEventListener('click', () => {
+                currentTheme.presetId = 'custom';
+                currentTheme.accentColor = hex;
+                applyTheme(currentTheme, true);
+            });
+            accentSwatchesContainer.appendChild(btn);
+        });
+
+        // Populate Fonts
+        FONT_CHOICES.forEach(font => {
+            const card = document.createElement('div');
+            card.className = 'font-option-card';
+            card.dataset.fontFamily = font.family;
+            card.style.fontFamily = font.family;
+            card.innerHTML = `
+                <div class="font-name-row">
+                    <span>${font.name}</span>
+                    <span class="font-status-tag" style="font-size: 0.6rem;"></span>
+                </div>
+                <div class="font-sample-text">${font.sample}</div>
+            `;
+            card.addEventListener('click', () => {
+                currentTheme.fontFamily = font.family;
+                applyTheme(currentTheme, true);
+            });
+            fontOptionsGrid.appendChild(card);
+        });
+
+        // Font scale buttons
+        document.querySelectorAll('.scale-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentTheme.fontScale = btn.dataset.scale;
+                applyTheme(currentTheme, true);
+            });
+        });
+
+        // Sync Settings UI inputs to current state
+        function syncSettingsUI() {
+            bgColorPicker.value = currentTheme.bgColor;
+            bgHexInput.value = currentTheme.bgColor.toUpperCase();
+
+            accentColorPicker.value = currentTheme.accentColor;
+            accentHexInput.value = currentTheme.accentColor.toUpperCase();
+
+            // Presets active state
+            document.querySelectorAll('.preset-chip').forEach(chip => {
+                const isMatching = chip.dataset.presetId === currentTheme.presetId;
+                chip.classList.toggle('active', isMatching);
+            });
+
+            // Fonts active state
+            document.querySelectorAll('.font-option-card').forEach(card => {
+                const isActive = card.dataset.fontFamily === currentTheme.fontFamily;
+                card.classList.toggle('active', isActive);
+                const tag = card.querySelector('.font-status-tag');
+                if (tag) tag.textContent = isActive ? '[✓]' : '';
+            });
+
+            // Scale buttons active state
+            document.querySelectorAll('.scale-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.scale === (currentTheme.fontScale || '1'));
+            });
+        }
+
+        // Color input events
+        bgColorPicker.addEventListener('input', (e) => {
+            currentTheme.presetId = 'custom';
+            currentTheme.bgColor = e.target.value;
+            applyTheme(currentTheme, true);
+        });
+
+        accentColorPicker.addEventListener('input', (e) => {
+            currentTheme.presetId = 'custom';
+            currentTheme.accentColor = e.target.value;
+            applyTheme(currentTheme, true);
+        });
+
+        function handleHexInput(inputEl, propertyName) {
+            let val = inputEl.value.trim();
+            if (!val.startsWith('#')) val = '#' + val;
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                currentTheme.presetId = 'custom';
+                currentTheme[propertyName] = val;
+                applyTheme(currentTheme, true);
+            }
+        }
+
+        bgHexInput.addEventListener('change', () => handleHexInput(bgHexInput, 'bgColor'));
+        accentHexInput.addEventListener('change', () => handleHexInput(accentHexInput, 'accentColor'));
+
+        // Modal Controls
+        function openSettingsModal() {
+            settingsModal.classList.remove('hidden');
+            syncSettingsUI();
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSettingsModal() {
+            settingsModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        settingsToggleBtn.addEventListener('click', openSettingsModal);
+        settingsCloseBtn.addEventListener('click', closeSettingsModal);
+        settingsDoneBtn.addEventListener('click', closeSettingsModal);
+        settingsBackdrop.addEventListener('click', closeSettingsModal);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !settingsModal.classList.contains('hidden')) {
+                closeSettingsModal();
+            }
+        });
+
+        // Restore Defaults
+        settingsResetBtn.addEventListener('click', () => {
+            currentTheme = Object.assign({}, DEFAULT_THEME);
+            try {
+                localStorage.removeItem(THEME_STORAGE_KEY);
+            } catch (e) {}
+            applyTheme(currentTheme, false);
+        });
+
+        // Initialize Settings
+        loadSavedTheme();
+        applyTheme(currentTheme, false);
     </script>
 </body>
 </html>
